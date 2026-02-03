@@ -38,7 +38,6 @@ class ProductController extends Controller
             'alert_quantity' => 'integer',
             'barcode' => 'nullable|string|unique:products',
             'material' => 'nullable|string',
-            'epd' => 'nullable|string',
             'customer_notes' => 'nullable|string',
             'image' => 'nullable|image|max:2048',
             'wholesale_price' => 'nullable|numeric'
@@ -69,7 +68,6 @@ class ProductController extends Controller
             'alert_quantity' => 'integer',
             'barcode' => 'nullable|string|unique:products,barcode,' . $product->id,
             'material' => 'nullable|string',
-            'epd' => 'nullable|string',
             'customer_notes' => 'nullable|string',
             'image' => 'nullable|image|max:2048',
             'wholesale_price' => 'nullable|numeric'

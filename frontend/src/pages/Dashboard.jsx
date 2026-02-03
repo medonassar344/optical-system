@@ -31,6 +31,7 @@ ChartJS.register(
 
 export default function Dashboard() {
     const { t } = useLanguage();
+    const [period, setPeriod] = useState('this_month');
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -40,13 +41,13 @@ export default function Dashboard() {
 
     useEffect(() => {
         fetchStats();
-    }, []);
+    }, [period]);
 
     const fetchStats = async () => {
         setLoading(true);
         setError(null);
         try {
-            const { data } = await api.get('/dashboard/stats');
+            const { data } = await api.get(`/dashboard/stats?period=${period}`);
             if (data) {
                 setData(data);
             } else {
@@ -100,7 +101,7 @@ export default function Dashboard() {
     const metrics = data.metrics || {};
     const charts = data.charts || { trend: [], categories: [] };
     const recentInvoices = data.recent_invoices || [];
-    const topProducts = data.top_products || [];
+    const topProducts = data.top_products || { frames: [], lenses: [], all: [] };
     const lowStockItems = data.low_stock_items || [];
     const outstandingInvoices = data.outstanding_invoices || [];
 
@@ -114,14 +115,6 @@ export default function Dashboard() {
                 data: (charts.trend || []).map(t => parseFloat(t.revenue || 0)),
                 borderColor: 'rgb(79, 70, 229)',
                 backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                tension: 0.4
-            },
-            {
-                fill: true,
-                label: t.dashboard.profit,
-                data: (charts.trend || []).map(t => parseFloat(t.profit || 0)),
-                borderColor: 'rgb(16, 185, 129)',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 tension: 0.4
             }
         ]
@@ -156,266 +149,236 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="space-y-6 pb-8">
+        <div className="space-y-6 pb-20">
+            {/* --- Period Selector --- */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
+                <div>
+                    <h1 className="text-xl font-black text-gray-800 tracking-tight">{t.dashboard.metrics.profit}</h1>
+                    <p className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">{t.dashboard.growthTrends}</p>
+                </div>
+                <select
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    className="bg-gray-50 border-2 border-gray-100 px-4 py-2 rounded-xl text-sm font-bold text-gray-700 outline-none focus:border-indigo-500 transition-all"
+                >
+                    <option value="today">{t.dashboard.periods.today}</option>
+                    <option value="yesterday">{t.dashboard.periods.yesterday}</option>
+                    <option value="seven_days">{t.dashboard.periods.seven_days}</option>
+                    <option value="this_month">{t.dashboard.periods.this_month}</option>
+                    <option value="last_month">{t.dashboard.periods.last_month}</option>
+                    <option value="this_year">{t.dashboard.periods.this_year}</option>
+                    <option value="last_year">{t.dashboard.periods.last_year}</option>
+                </select>
+            </div>
+
             {/* --- Hero Stats --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
-                    title={t.dashboard.dailyRevenue}
-                    value={formatCurrency(metrics.daily_sales)}
+                    title={t.dashboard.metrics.revenue}
+                    value={formatCurrency(metrics.revenue)}
                     color="indigo"
                     icon="💰"
                 />
                 <StatCard
-                    title={t.dashboard.outstandingDebt}
-                    value={formatCurrency(metrics.outstanding_total_balance)}
+                    title={t.dashboard.metrics.cogs}
+                    value={formatCurrency(metrics.cogs)}
                     color="red"
-                    icon="💸"
-                    alert={metrics.outstanding_count > 0}
+                    icon="📉"
                 />
                 <StatCard
-                    title={t.dashboard.totalCustomers}
-                    value={metrics.customers_count || 0}
-                    color="blue"
-                    icon="👥"
-                />
-                <StatCard
-                    title={t.dashboard.todaysProfit}
-                    value={formatCurrency(metrics.today_profit)}
+                    title={t.dashboard.metrics.profit}
+                    value={formatCurrency(metrics.profit)}
                     color="green"
                     icon="📈"
                 />
+                <StatCard
+                    title={t.dashboard.metrics.growth}
+                    value={`${metrics.growth > 0 ? '+' : ''}${parseFloat(metrics.growth).toFixed(1)}%`}
+                    color={metrics.growth >= 0 ? "blue" : "red"}
+                    icon={metrics.growth >= 0 ? "🚀" : "⚠️"}
+                />
             </div>
 
-            {/* --- Charts Section --- */}
+            {/* --- Charts --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-gray-800 tracking-tight">{t.dashboard.title}</h3>
-                        <span className="text-[10px] font-black px-2 py-1 bg-gray-100 rounded text-gray-500 uppercase">{t.dashboard.growthTrends}</span>
-                    </div>
-                    <div className="flex-1 min-h-[300px]">
+                <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col min-h-[400px]">
+                    <h3 className="text-lg font-black text-gray-800 mb-8 tracking-tighter uppercase">{t.dashboard.metrics.revenue}</h3>
+                    <div className="flex-1">
                         <Line
                             data={trendConfig}
                             options={{
                                 maintainAspectRatio: false,
-                                plugins: { legend: { position: 'top', labels: { boxWidth: 10, usePointStyle: true } } },
-                                scales: { y: { beginAtZero: true } }
+                                plugins: { legend: { display: false } },
+                                scales: {
+                                    y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                                    x: { grid: { display: false } }
+                                }
                             }}
                         />
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
-                    <h3 className="text-lg font-bold text-gray-800 self-start mb-6">{t.dashboard.categoryDist}</h3>
-                    <div className="w-full h-64 flex justify-center">
-                        {charts.categories?.length > 0 ? (
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 flex flex-col items-center">
+                    <h3 className="text-lg font-black text-gray-800 self-start mb-8 tracking-tighter uppercase">{t.dashboard.categoryDist}</h3>
+                    <div className="w-full aspect-square relative flex items-center justify-center">
+                        <div className="absolute inset-0 p-4">
                             <Doughnut
                                 data={categoryConfig}
                                 options={{
-                                    cutout: '75%',
+                                    cutout: '80%',
                                     maintainAspectRatio: false,
                                     plugins: { legend: { display: false } }
                                 }}
                             />
-                        ) : (
-                            <div className="flex items-center justify-center text-gray-400 italic text-sm">{t.dashboard.noSalesData}</div>
-                        )}
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{t.common.total}</p>
+                            <p className="text-2xl font-black text-gray-800">{formatCurrency(metrics.revenue)}</p>
+                        </div>
                     </div>
-                    <div className="mt-8 grid grid-cols-2 gap-x-6 gap-y-3 w-full border-t pt-4">
+                    <div className="mt-8 space-y-3 w-full border-t border-gray-100 pt-6">
                         {(charts.categories || []).map((c, i) => (
-                            <div key={i} className="text-[11px] flex items-center justify-between">
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: categoryConfig.datasets[0].backgroundColor[i] || '#ccc' }}></span>
-                                    <span className="text-gray-500 capitalize truncate">{c.type ? (t.nav[c.type.toLowerCase()] || c.type) : t.dashboard.other}</span>
+                            <div key={i} className="flex items-center justify-between group cursor-default">
+                                <div className="flex items-center gap-3">
+                                    <span className="w-2.5 h-2.5 rounded-full ring-4 ring-white shadow-sm" style={{ backgroundColor: categoryConfig.datasets[0].backgroundColor[i] }}></span>
+                                    <span className="text-[11px] font-black text-gray-400 uppercase tracking-tight group-hover:text-gray-800 transition-colors">
+                                        {c.type ? (t.nav[c.type.toLowerCase()] || c.type) : t.dashboard.other}
+                                    </span>
                                 </div>
-                                <span className="font-bold text-gray-800 ml-2">{formatCurrency(c.total)}</span>
+                                <span className="text-xs font-black text-gray-800">{formatCurrency(c.total)}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
 
-            {/* --- Debt Management --- */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-5 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-red-100 p-2 rounded-lg text-xl">🚨</div>
-                        <div>
-                            <h3 className="font-bold text-gray-800">{t.dashboard.outstandingBalances}</h3>
-                            <p className="text-xs text-gray-500">{t.dashboard.unpaidOrders}</p>
-                        </div>
-                    </div>
-                    <div className="relative w-full sm:w-64">
-                        <input
-                            type="text"
-                            placeholder={t.dashboard.findPlaceholder}
-                            className="w-full text-sm border-gray-200 border p-2 pl-8 rtl:pl-2 rtl:pr-8 rounded-xl shadow-inner focus:ring-red-400 focus:border-red-400 outline-none"
-                            value={debtSearch}
-                            onChange={(e) => setDebtSearch(e.target.value)}
-                        />
-                        <span className="absolute left-3 rtl:left-auto rtl:right-3 top-2.5 text-gray-400 text-xs">🔍</span>
-                    </div>
-                </div>
-                <div className="max-h-72 overflow-y-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-400 text-[10px] uppercase font-black sticky top-0 z-10">
-                            <tr>
-                                <th className="px-6 py-4">{t.dashboard.table.unit}</th>
-                                <th className="px-6 py-4">{t.dashboard.table.customer}</th>
-                                <th className="px-6 py-4">{t.dashboard.table.financials}</th>
-                                <th className="px-6 py-4 text-right rtl:text-left">{t.dashboard.table.action}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y text-sm">
-                            {filteredDebts.map(inv => (
-                                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-6 py-4">
-                                        <div className="font-black text-gray-400 text-xs">#{inv.id}</div>
-                                        <div className="text-[10px] text-gray-400">{new Date(inv.created_at).toLocaleDateString()}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-gray-800">{inv.customer?.name || t.dashboard.guest}</div>
-                                        <div className="text-[10px] text-gray-500">{inv.customer?.phone || ''}</div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-center">
-                                                <p className="text-[9px] uppercase font-bold text-gray-400">{t.dashboard.table.total}</p>
-                                                <p className="text-xs font-bold">${inv.total}</p>
-                                            </div>
-                                            <div className="w-px h-6 bg-gray-200"></div>
-                                            <div className="text-center">
-                                                <p className="text-[9px] uppercase font-bold text-green-400">{t.dashboard.table.paid}</p>
-                                                <p className="text-xs font-bold text-green-600">${inv.amount_paid}</p>
-                                            </div>
-                                            <div className="w-px h-6 bg-gray-200"></div>
-                                            <div className="text-center">
-                                                <p className="text-[9px] uppercase font-bold text-red-400">{t.dashboard.table.debt}</p>
-                                                <p className="text-xs font-black text-red-600">${(inv.total - inv.amount_paid).toFixed(2)}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right rtl:text-left">
-                                        <button
-                                            onClick={() => { setPaymentModal(inv); setPaymentAmount((inv.total - inv.amount_paid).toFixed(2)); }}
-                                            className="bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-black hover:scale-105 active:scale-95 transition-all"
-                                        >
-                                            {t.dashboard.table.process}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {filteredDebts.length === 0 && (
-                                <tr>
-                                    <td colSpan="4" className="py-12 text-center text-gray-400 italic">No debts found matching your search.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* --- Summary Panels --- */}
+            {/* --- Top Products Breakdown --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Panel title={t.dashboard.recentTransactions} badge={t.dashboard.live}>
-                    <table className="w-full text-left rtl:text-right">
-                        <thead className="text-[10px] text-gray-400 uppercase font-bold border-b">
-                            <tr>
-                                <th className="pb-3 pl-4 rtl:pl-0 rtl:pr-4">{t.dashboard.id}</th>
-                                <th className="pb-3">{t.dashboard.customer}</th>
-                                <th className="pb-3">{t.dashboard.sum}</th>
-                                <th className="pb-3 text-right rtl:text-left pr-4 rtl:pr-0 rtl:pl-4">{t.dashboard.method}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y text-xs">
-                            {recentInvoices.map(inv => (
-                                <tr key={inv.id} className="hover:bg-gray-50">
-                                    <td className="py-3 pl-4 rtl:pl-0 rtl:pr-4 font-bold text-indigo-600">#{inv.id}</td>
-                                    <td className="py-3 font-medium">{inv.customer?.name || t.dashboard.customer}</td>
-                                    <td className="py-3 font-black text-gray-800">${inv.total}</td>
-                                    <td className="py-3 text-right pr-4">
-                                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full text-[9px] font-black uppercase">{inv.payment_method}</span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </Panel>
-
-                <Panel title={t.dashboard.performanceLeaders} badge={t.dashboard.top5}>
+                <Panel title={t.nav.frames} badge={t.dashboard.top5}>
                     <div className="space-y-4">
-                        {topProducts.map((p, i) => (
-                            <div key={p.id} className="flex items-center gap-4 group">
-                                <div className="text-2xl font-black text-gray-100 italic group-hover:text-indigo-100 transition-colors">0{i + 1}</div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-gray-800 text-sm leading-tight">{p.brand} {p.model_code}</h4>
-                                    <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">{p.type}</p>
-                                </div>
-                                <div className="text-right rtl:text-left">
-                                    <p className="text-sm font-black text-indigo-600">{p.invoice_items_count}</p>
-                                    <p className="text-[9px] text-gray-400 uppercase font-bold">{t.dashboard.units}</p>
-                                </div>
-                            </div>
+                        {(topProducts.frames || []).map((p, i) => (
+                            <TopProductRow key={p.id} index={i} product={p} unitsLabel={t.dashboard.units} />
                         ))}
+                        {topProducts.frames?.length === 0 && <p className="text-center text-gray-400 text-xs py-10 italic">No frames sold in this period.</p>}
+                    </div>
+                </Panel>
+                <Panel title={t.nav.lenses} badge={t.dashboard.top5}>
+                    <div className="space-y-4">
+                        {(topProducts.lenses || []).map((p, i) => (
+                            <TopProductRow key={p.id} index={i} product={p} unitsLabel={t.dashboard.units} />
+                        ))}
+                        {topProducts.lenses?.length === 0 && <p className="text-center text-gray-400 text-xs py-10 italic">No lenses sold in this period.</p>}
                     </div>
                 </Panel>
             </div>
 
-            {/* --- Payment Processing Modal --- */}
-            {paymentModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-[100] backdrop-blur-md">
-                    <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative border border-gray-100 overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-2 bg-green-500"></div>
-                        <h2 className="text-3xl font-black text-gray-800 mb-2">{t.dashboard.modal.recordPayment}</h2>
-                        <p className="text-sm text-gray-500 mb-8 border-b pb-4">{t.dashboard.modal.order} <span className="text-indigo-600 font-bold">#{paymentModal.id}</span> • {paymentModal.customer?.name || t.dashboard.customer}</p>
+            {/* --- Low Stock & Recent Invoices --- */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                        <h3 className="font-black text-gray-800 uppercase tracking-tighter">{t.dashboard.outstandingBalances}</h3>
+                        <div className="relative w-48">
+                            <input
+                                type="text"
+                                placeholder={t.dashboard.findPlaceholder}
+                                className="w-full text-[10px] border-2 border-gray-100 p-2 pl-8 rounded-xl focus:border-red-400 outline-none transition-all font-bold"
+                                value={debtSearch}
+                                onChange={(e) => setDebtSearch(e.target.value)}
+                            />
+                            <span className="absolute left-3 top-2.5 text-[10px]">🔎</span>
+                        </div>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                        <table className="w-full text-left">
+                            <tbody className="divide-y divide-gray-100">
+                                {filteredDebts.map(inv => (
+                                    <tr key={inv.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-8 py-5">
+                                            <div className="font-black text-indigo-600 text-xs">#{inv.id}</div>
+                                            <div className="text-[10px] text-gray-400 font-bold">{new Date(inv.created_at).toLocaleDateString()}</div>
+                                        </td>
+                                        <td className="px-8 py-5">
+                                            <div className="font-black text-gray-800 text-sm">{inv.customer?.name}</div>
+                                            <div className="text-[10px] text-gray-400 font-black tracking-tighter">{inv.customer?.phone}</div>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <div className="inline-flex flex-col items-end">
+                                                <p className="text-[9px] font-black text-red-400 uppercase tracking-widest">{t.dashboard.table.debt}</p>
+                                                <p className="text-lg font-black text-red-600">${(inv.total - inv.amount_paid).toFixed(2)}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            <button
+                                                onClick={() => { setPaymentModal(inv); setPaymentAmount((inv.total - inv.amount_paid).toFixed(2)); }}
+                                                className="bg-gray-900 text-white px-5 py-2.5 rounded-2xl text-[10px] font-black shadow-lg shadow-gray-200 hover:scale-105 active:scale-95 transition-all uppercase"
+                                            >
+                                                {t.dashboard.table.process}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
 
-                        <div className="bg-green-50 p-6 rounded-2xl mb-8 flex justify-between items-center">
-                            <div>
-                                <p className="text-[10px] uppercase font-black text-green-700 opacity-60">{t.dashboard.modal.remaining}</p>
-                                <p className="text-3xl font-black text-green-700">${(paymentModal.total - paymentModal.amount_paid).toFixed(2)}</p>
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-center mb-10">
+                        <h3 className="text-lg font-black text-gray-800 uppercase tracking-tighter">{t.dashboard.recentTransactions}</h3>
+                        <span className="text-[9px] font-black px-2 py-1 bg-green-50 text-green-600 rounded-lg animate-pulse">● {t.dashboard.live}</span>
+                    </div>
+                    <div className="space-y-6">
+                        {recentInvoices.map(inv => (
+                            <div key={inv.id} className="flex items-center gap-4 group">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-sm font-black text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                    #{inv.id.toString().slice(-2)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-black text-gray-800 truncate">{inv.customer?.name || t.dashboard.guest}</p>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{inv.payment_method}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm font-black text-gray-900">${inv.total}</p>
+                                    <p className="text-[9px] text-gray-400 font-black">{new Date(inv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
                             </div>
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">💵</div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* --- Payment Modal (Existing) --- */}
+            {paymentModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 z-[100] animate-fadeIn">
+                    <div className="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md relative border border-white/20">
+                        <h2 className="text-3xl font-black text-gray-800 mb-2 leading-none">{t.dashboard.modal.recordPayment}</h2>
+                        <p className="text-xs text-gray-400 mb-10 font-bold uppercase tracking-widest border-b pb-6">
+                            {t.dashboard.modal.order} <span className="text-indigo-600">#{paymentModal.id}</span>
+                        </p>
+
+                        <div className="bg-indigo-600 p-8 rounded-[2rem] mb-10 text-white shadow-xl shadow-indigo-100 flex justify-between items-center">
+                            <div>
+                                <p className="text-[10px] uppercase font-black opacity-60 tracking-[0.2em] mb-1">{t.dashboard.modal.remaining}</p>
+                                <p className="text-4xl font-black">${(paymentModal.total - paymentModal.amount_paid).toFixed(2)}</p>
+                            </div>
+                            <div className="text-4xl">💰</div>
                         </div>
 
-                        <form onSubmit={handleProcessPayment} className="space-y-6">
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-2 tracking-widest">{t.dashboard.modal.amountToPay}</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-full border-2 border-gray-100 p-5 rounded-2xl text-2xl font-black text-gray-800 focus:border-green-500 focus:ring-4 focus:ring-green-50 outline-none transition-all shadow-inner"
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                    autoFocus
-                                />
-                            </div>
+                        <form onSubmit={handleProcessPayment} className="space-y-8">
+                            <input
+                                type="number"
+                                step="0.01"
+                                className="w-full bg-gray-50 border-4 border-gray-50 p-6 rounded-[2rem] text-3xl font-black text-gray-800 focus:border-indigo-100 focus:bg-white transition-all outline-none"
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                autoFocus
+                            />
 
-                            {paymentModal.payments?.length > 0 && (
-                                <div className="bg-gray-50 p-4 rounded-xl space-y-2 border border-dashed border-gray-200">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t.dashboard.modal.recentPayments}</p>
-                                    <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                                        {paymentModal.payments.map(p => (
-                                            <div key={p.id} className="flex justify-between text-[11px] font-bold">
-                                                <span className="text-gray-400">{new Date(p.created_at).toLocaleDateString()}</span>
-                                                <span className="text-green-600">+${p.amount}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="flex gap-4 pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setPaymentModal(null)}
-                                    className="flex-1 bg-gray-50 text-gray-400 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-colors"
-                                >
+                            <div className="flex gap-4">
+                                <button type="button" onClick={() => setPaymentModal(null)} className="flex-1 py-5 rounded-3xl font-black text-gray-400 hover:bg-gray-50 transition-all uppercase tracking-widest text-[10px]">
                                     {t.dashboard.modal.cancel}
                                 </button>
-                                <button
-                                    type="submit"
-                                    className="flex-[2] bg-gray-900 text-white py-4 rounded-2xl font-black hover:bg-black shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
-                                >
+                                <button type="submit" className="flex-[2] bg-gray-900 text-white py-5 rounded-3xl font-black shadow-2xl hover:bg-black active:scale-95 transition-all text-xs uppercase tracking-[0.2em]">
                                     {t.dashboard.modal.confirm}
                                 </button>
                             </div>
@@ -427,44 +390,58 @@ export default function Dashboard() {
     );
 }
 
-function StatCard({ title, value, color, icon, alert = false }) {
-    const bgColors = {
-        indigo: 'bg-indigo-50 border-indigo-100 text-indigo-600 shadow-indigo-100',
-        green: 'bg-green-50 border-green-100 text-green-600 shadow-green-100',
-        blue: 'bg-blue-50 border-blue-100 text-blue-600 shadow-blue-100',
-        red: 'bg-red-50 border-red-100 text-red-600 shadow-red-100',
+function StatCard({ title, value, color, icon }) {
+    const themes = {
+        indigo: 'text-indigo-600 bg-indigo-50 border-indigo-100 ring-indigo-500/10',
+        red: 'text-red-600 bg-red-50 border-red-100 ring-red-500/10',
+        green: 'text-green-600 bg-green-50 border-green-100 ring-green-500/10',
+        blue: 'text-blue-600 bg-blue-50 border-blue-100 ring-blue-500/10',
     };
-
-    const colorParts = (bgColors[color] || bgColors.indigo).split(' ');
+    const theme = themes[color] || themes.indigo;
 
     return (
-        <div className={`p-6 rounded-3xl border-2 bg-white shadow-lg ${colorParts[3]} flex flex-col justify-between transition-all hover:-translate-y-1 duration-300 relative overflow-hidden group`}>
+        <div className="bg-white p-6 rounded-[2rem] border-2 border-gray-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1 group">
             <div className="flex justify-between items-start mb-6">
-                <span className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${colorParts[0]} group-hover:scale-110 transition-transform`}>
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl animate-bounce-slow group-hover:scale-125 transition-transform ${theme.split(' ')[1]}`}>
                     {icon}
-                </span>
-                {alert && (
-                    <div className="flex items-center gap-1.5 bg-red-100 px-2 py-1 rounded-full">
-                        <span className="w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-                        <span className="text-[8px] font-black text-red-600 uppercase">{t.dashboard.alert}</span>
-                    </div>
-                )}
+                </div>
+                <div className={`w-2 h-2 rounded-full ${theme.split(' ')[0].replace('text-', 'bg-')}`}></div>
             </div>
-            <div>
-                <h4 className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">{title}</h4>
-                <p className={`text-4xl font-black mt-2 tracking-tight ${colorParts[2]}`}>{value}</p>
+            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-1">{title}</h4>
+            <div className={`text-3xl font-black tracking-tighter ${theme.split(' ')[0]}`}>{value}</div>
+            <div className={`mt-3 h-1 w-12 rounded-full opacity-30 ${theme.split(' ')[0].replace('text-', 'bg-')}`}></div>
+        </div>
+    );
+}
+
+function TopProductRow({ index, product, unitsLabel }) {
+    return (
+        <div className="flex items-center gap-4 group">
+            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-[11px] font-black text-gray-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                0{index + 1}
             </div>
-            <div className={`absolute -bottom-6 -right-6 w-20 h-20 ${colorParts[0]} opacity-20 rounded-full blur-2xl group-hover:scale-150 transition-transform`}></div>
+            <div className="flex-1 min-w-0">
+                <h4 className="font-black text-gray-800 text-xs truncate uppercase tracking-tight">{product.brand} {product.model_code}</h4>
+                <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-gray-400 font-extrabold uppercase italic">{product.type}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-200"></span>
+                    <span className="text-[9px] text-indigo-500 font-black">${product.price}</span>
+                </div>
+            </div>
+            <div className="text-right">
+                <p className="text-sm font-black text-gray-800 leading-none">{product.invoice_items_count}</p>
+                <p className="text-[8px] text-gray-400 font-black uppercase tracking-tighter">{unitsLabel}</p>
+            </div>
         </div>
     );
 }
 
 function Panel({ title, badge, children }) {
     return (
-        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-black text-gray-800 tracking-tight">{title}</h3>
-                {badge && <span className="text-[10px] font-black px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg uppercase tracking-widest">{badge}</span>}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-lg font-black text-gray-800 uppercase tracking-tighter">{title}</h3>
+                {badge && <span className="text-[9px] font-black px-3 py-1 bg-gray-50 text-gray-400 rounded-xl uppercase tracking-widest">{badge}</span>}
             </div>
             {children}
         </div>

@@ -16,7 +16,6 @@ export default function Products() {
         alert_quantity: 5,
         barcode: '',
         material: '',
-        epd: '',
         customer_notes: '',
         image: null,
         wholesale_price: ''
@@ -42,7 +41,6 @@ export default function Products() {
             alert_quantity: product.alert_quantity || 5,
             barcode: product.barcode || '',
             material: product.material || '',
-            epd: product.epd || '',
             customer_notes: product.customer_notes || '',
             image: null,
             wholesale_price: product.wholesale_price || ''
@@ -91,7 +89,6 @@ export default function Products() {
                 alert_quantity: 5,
                 barcode: '',
                 material: '',
-                epd: '',
                 customer_notes: '',
                 image: null,
                 wholesale_price: ''
@@ -148,7 +145,6 @@ export default function Products() {
                                     <div className="text-sm text-gray-900 capitalize">{t.products.types[product.type] || product.type}</div>
                                     <div className="text-xs text-gray-500">
                                         {product.material && <span className="mr-2">Mat: {product.material}</span>}
-                                        {product.epd && <span>EPD: {product.epd}</span>}
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">${product.price}</td>
@@ -219,7 +215,7 @@ export default function Products() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">{t.products.material}</label>
                                     <select
@@ -233,15 +229,6 @@ export default function Products() {
                                         <option value="titanium">{t.products.materials.titanium}</option>
                                         <option value="mixed">{t.products.materials.mixed}</option>
                                     </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">{t.products.epd}</label>
-                                    <input
-                                        className="w-full border p-2 rounded mt-1"
-                                        value={formData.epd}
-                                        onChange={e => setFormData({ ...formData, epd: e.target.value })}
-                                        placeholder="e.g. 50mm"
-                                    />
                                 </div>
                             </div>
 

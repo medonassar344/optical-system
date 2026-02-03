@@ -6,7 +6,6 @@ export default function CustomerForm({ initialData, onSubmit, onCancel }) {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
-        address: '',
         medical_info: {
             ipd: '',
             od: { sph: '', cyl: '', axis: '', add: '', pd: '' },
@@ -19,7 +18,6 @@ export default function CustomerForm({ initialData, onSubmit, onCancel }) {
             setFormData({
                 name: initialData.name || '',
                 phone: initialData.phone || '',
-                address: initialData.address || '',
                 medical_info: initialData.medical_info || {
                     ipd: '',
                     od: { sph: '', cyl: '', axis: '', add: '', pd: '' },
@@ -65,19 +63,12 @@ export default function CustomerForm({ initialData, onSubmit, onCancel }) {
                         onChange={handleChange}
                         required
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1">
                         <input
                             name="phone"
                             placeholder={t.common.phone}
                             className="w-full border p-2 rounded"
                             value={formData.phone}
-                            onChange={handleChange}
-                        />
-                        <input
-                            name="address"
-                            placeholder={t.common.address}
-                            className="w-full border p-2 rounded"
-                            value={formData.address}
                             onChange={handleChange}
                         />
                     </div>

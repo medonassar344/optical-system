@@ -15,7 +15,6 @@ class Product extends Model
         'alert_quantity',
         'barcode',
         'material',
-        'epd',
         'customer_notes',
         'image_path',
         'wholesale_price'

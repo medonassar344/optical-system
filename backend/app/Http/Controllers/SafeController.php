@@ -14,7 +14,7 @@ class SafeController extends Controller
      */
     public function index()
     {
-        $payments = Payment::with(['invoice.customer'])
+        $payments = Payment::with(['invoice.customer', 'invoice.items.product'])
             ->latest()
             ->get();
 
@@ -25,6 +25,31 @@ class SafeController extends Controller
     }
 
     /**
+     * Store a manual payment entry.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric',
+            'payment_method' => 'required|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $payment = Payment::create([
+            'amount' => $validated['amount'],
+            'payment_method' => $validated['payment_method'],
+            'notes' => $validated['notes'],
+            'type' => 'manual',
+            'invoice_id' => null,
+        ]);
+
+        return response()->json([
+            'message' => 'Manual entry added successfully',
+            'data' => $payment
+        ], 201);
+    }
+
+    /**
      * Remove the specified payment and reverse the invoice balance.
      */
     public function destroy(Payment $payment)
@@ -32,16 +57,18 @@ class SafeController extends Controller
         return DB::transaction(function () use ($payment) {
             $invoice = $payment->invoice;
 
-            // Decrement the amount_paid from the invoice
-            $invoice->decrement('amount_paid', $payment->amount);
+            // Only decrement the amount_paid if there is an invoice linked
+            if ($invoice) {
+                $invoice->decrement('amount_paid', $payment->amount);
+            }
 
             // Delete the payment record
             $payment->delete();
 
             return response()->json([
-                'message' => 'Payment entry deleted and balance reversed successfully.',
-                'invoice_id' => $invoice->id,
-                'new_balance' => $invoice->total - $invoice->amount_paid
+                'message' => 'Entry deleted successfully.',
+                'invoice_id' => $invoice ? $invoice->id : null,
+                'new_balance' => $invoice ? ($invoice->total - $invoice->amount_paid) : null
             ]);
         });
     }

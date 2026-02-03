@@ -18,7 +18,6 @@ export default function Layout() {
         { name: t.nav.inventory, path: '/products' },
         { name: t.nav.customers, path: '/customers' },
         { name: t.nav.sales, path: '/sales' },
-        { name: t.nav.history, path: '/invoices' },
         { name: t.nav.safe, path: '/safe' },
         { name: t.nav.settings, path: '/settings' },
     ];

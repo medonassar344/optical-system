@@ -25,7 +25,6 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'required|string',
             'phone' => 'nullable|string',
-            'address' => 'nullable|string',
             'medical_info' => 'nullable|array'
         ]);
 
@@ -48,7 +47,6 @@ class CustomerController extends Controller
         $validated = $request->validate([
             'name' => 'string',
             'phone' => 'nullable|string',
-            'address' => 'nullable|string',
             'medical_info' => 'nullable|array'
         ]);
 

@@ -12,94 +12,148 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function stats()
+    public function stats(Request $request)
     {
-        $today = Carbon::today();
-        $startOfWeek = Carbon::now()->subDays(6)->startOfDay();
+        $period = $request->query('period', 'this_month');
+        $now = Carbon::now();
 
-        // 1. Basic Sales Stats
-        $dailySales = Invoice::whereDate('created_at', $today)->sum('total');
-        $monthlySales = Invoice::whereMonth('created_at', $today->month)
-            ->whereYear('created_at', $today->year)
-            ->sum('total');
-
-        // 2. Profit Calculation (Revenue - Cost)
-        // Note: Using current wholesale_price as a proxy for cost at time of sale
-        $totalProfit = DB::table('invoice_items')
-            ->join('products', 'invoice_items.product_id', '=', 'products.id')
-            ->select(DB::raw('SUM(invoice_items.subtotal - (COALESCE(products.wholesale_price, 0) * invoice_items.quantity)) as profit'))
-            ->value('profit') ?? 0;
-
-        $todayProfit = DB::table('invoice_items')
-            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-            ->join('products', 'invoice_items.product_id', '=', 'products.id')
-            ->whereDate('invoices.created_at', $today)
-            ->select(DB::raw('SUM(invoice_items.subtotal - (COALESCE(products.wholesale_price, 0) * invoice_items.quantity)) as profit'))
-            ->value('profit') ?? 0;
-
-        // 3. 7-Day Trend (Revenue & Profit)
-        $trendData = [];
-        for ($i = 6; $i >= 0; $i--) {
-            $date = Carbon::now()->subDays($i);
-            $dayRevenue = Invoice::whereDate('created_at', $date)->sum('total');
-            $dayProfit = DB::table('invoice_items')
-                ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
-                ->join('products', 'invoice_items.product_id', '=', 'products.id')
-                ->whereDate('invoices.created_at', $date)
-                ->select(DB::raw('SUM(invoice_items.subtotal - (COALESCE(products.wholesale_price, 0) * invoice_items.quantity)) as profit'))
-                ->value('profit') ?? 0;
-
-            $trendData[] = [
-                'date' => $date->format('D, M d'),
-                'revenue' => (float)$dayRevenue,
-                'profit' => (float)$dayProfit
-            ];
+        // 1. Determine Date Range
+        switch ($period) {
+            case 'today':
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
+                $prevStart = $now->copy()->subDay()->startOfDay();
+                $prevEnd = $now->copy()->subDay()->endOfDay();
+                break;
+            case 'this_month':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                $prevStart = $now->copy()->subMonth()->startOfMonth();
+                $prevEnd = $now->copy()->subMonth()->endOfMonth();
+                break;
+            case 'last_month':
+                $start = $now->copy()->subMonth()->startOfMonth();
+                $end = $now->copy()->subMonth()->endOfMonth();
+                $prevStart = $now->copy()->subMonths(2)->startOfMonth();
+                $prevEnd = $now->copy()->subMonths(2)->endOfMonth();
+                break;
+            case 'this_year':
+                $start = $now->copy()->startOfYear();
+                $end = $now->copy()->endOfYear();
+                $prevStart = $now->copy()->subYear()->startOfYear();
+                $prevEnd = $now->copy()->subYear()->endOfYear();
+                break;
+            case 'last_year':
+                $start = $now->copy()->subYear()->startOfYear();
+                $end = $now->copy()->subYear()->endOfYear();
+                $prevStart = $now->copy()->subYears(2)->startOfYear();
+                $prevEnd = $now->copy()->subYears(2)->endOfYear();
+                break;
+            default: // Default to 7 days
+                $start = $now->copy()->subDays(6)->startOfDay();
+                $end = $now->copy()->endOfDay();
+                $prevStart = $now->copy()->subDays(13)->startOfDay();
+                $prevEnd = $now->copy()->subDays(7)->endOfDay();
+                break;
         }
 
-        // 4. Category Breakdown
-        $categorySales = DB::table('invoice_items')
+        // 2. Metrics Calculation
+        $revenue = Invoice::whereBetween('created_at', [$start, $end])->sum('total');
+        $prevRevenue = Invoice::whereBetween('created_at', [$prevStart, $prevEnd])->sum('total');
+
+        $cogs = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
             ->join('products', 'invoice_items.product_id', '=', 'products.id')
-            ->select(DB::raw('COALESCE(products.type, "other") as type'), DB::raw('SUM(invoice_items.subtotal) as total'))
+            ->whereBetween('invoices.created_at', [$start, $end])
+            ->select(DB::raw('SUM(COALESCE(products.wholesale_price, 0) * invoice_items.quantity) as cost'))
+            ->value('cost') ?? 0;
+
+        $profit = $revenue - $cogs;
+
+        // 3. Category Distribution
+        $categorySales = DB::table('invoice_items')
+            ->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+            ->join('products', 'invoice_items.product_id', '=', 'products.id')
+            ->whereBetween('invoices.created_at', [$start, $end])
+            ->select('products.type', DB::raw('SUM(invoice_items.subtotal) as total'))
             ->groupBy('products.type')
             ->get();
 
-        // 5. Recent Activity
-        $recentInvoices = Invoice::with('customer')
-            ->latest()
-            ->take(5)
+        // 4. Trend Data (Daily or Monthly depending on period)
+        $trendData = [];
+        if (in_array($period, ['this_year', 'last_year'])) {
+            // Monthly trend for year view
+            for ($i = 0; $i < 12; $i++) {
+                $monthStart = $start->copy()->addMonths($i)->startOfMonth();
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                if ($monthStart->isAfter($now)) break;
+
+                $rev = Invoice::whereBetween('created_at', [$monthStart, $monthEnd])->sum('total');
+                $trendData[] = [
+                    'date' => $monthStart->format('M Y'),
+                    'revenue' => (float)$rev
+                ];
+            }
+        } else {
+            // Daily trend
+            $diff = $start->diffInDays($end);
+            for ($i = 0; $i <= $diff; $i++) {
+                $day = $start->copy()->addDays($i);
+                if ($day->isAfter($now)) break;
+
+                $rev = Invoice::whereDate('created_at', $day)->sum('total');
+                $trendData[] = [
+                    'date' => $day->format('M d'),
+                    'revenue' => (float)$rev
+                ];
+            }
+        }
+
+        // 5. Advanced Stats per Product Type
+        $topFrames = Product::where('type', 'frames')
+            ->withCount(['invoiceItems' => function($q) use ($start, $end) {
+                $q->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                  ->whereBetween('invoices.created_at', [$start, $end]);
+            }])
+            ->orderBy('invoice_items_count', 'desc')
+            ->take(3)
             ->get();
 
-        // 6. Low Stock, Top Products & Outstanding Invoices
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'alert_quantity')->get();
-        $topProducts = Product::withCount('invoiceItems')
+        $topLenses = Product::where('type', 'lenses')
+            ->withCount(['invoiceItems' => function($q) use ($start, $end) {
+                $q->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                  ->whereBetween('invoices.created_at', [$start, $end]);
+            }])
             ->orderBy('invoice_items_count', 'desc')
-            ->take(5)
+            ->take(3)
             ->get();
-            
-        $outstandingInvoices = Invoice::with('customer')
-            ->whereRaw('amount_paid < total')
-            ->latest()
-            ->get();
+
+        // 6. Existing Recent/Low Stock
+        $recentInvoices = Invoice::with('customer')->latest()->take(5)->get();
+        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'alert_quantity')->get();
 
         return response()->json([
             'metrics' => [
-                'daily_sales' => (float)$dailySales,
-                'monthly_sales' => (float)$monthlySales,
-                'today_profit' => (float)$todayProfit,
-                'total_profit' => (float)$totalProfit,
+                'revenue' => (float)$revenue,
+                'prev_revenue' => (float)$prevRevenue,
+                'profit' => (float)$profit,
+                'cogs' => (float)$cogs,
                 'customers_count' => Customer::count(),
                 'low_stock_count' => $lowStockProducts->count(),
-                'outstanding_count' => $outstandingInvoices->count(),
-                'outstanding_total_balance' => (float)$outstandingInvoices->sum(fn($i) => $i->total - $i->amount_paid),
+                'growth' => $prevRevenue > 0 ? (($revenue - $prevRevenue) / $prevRevenue) * 100 : 0
             ],
             'charts' => [
                 'trend' => $trendData,
                 'categories' => $categorySales
             ],
+            'top_products' => [
+                'frames' => $topFrames,
+                'lenses' => $topLenses,
+                'all' => Product::withCount('invoiceItems')->orderBy('invoice_items_count', 'desc')->take(5)->get()
+            ],
             'recent_invoices' => $recentInvoices,
-            'top_products' => $topProducts,
             'low_stock_items' => $lowStockProducts,
-            'outstanding_invoices' => $outstandingInvoices
+            'outstanding_invoices' => Invoice::with('customer')->whereRaw('amount_paid < total')->latest()->get()
         ]);
     }
 }

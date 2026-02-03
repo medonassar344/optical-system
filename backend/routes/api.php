@@ -20,6 +20,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/invoices/{invoice}/payment', [InvoiceController::class, 'addPayment']);
     
     Route::get('/safe', [\App\Http\Controllers\SafeController::class, 'index']);
+    Route::post('/safe', [\App\Http\Controllers\SafeController::class, 'store']);
     Route::delete('/safe/{payment}', [\App\Http\Controllers\SafeController::class, 'destroy']);
     
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
