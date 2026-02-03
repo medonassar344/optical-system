@@ -91,123 +91,144 @@ export default function Invoices() {
     );
 
     return (
-        <div className="space-y-6 pb-20 animate-fadeIn">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-800">{t.nav.salesHistory}</h1>
-                    <p className="text-sm text-gray-500">{t.invoices.description}</p>
+        <div className="space-y-12 pb-20 max-w-7xl mx-auto animate-reveal">
+            {/* Header / Search */}
+            <div className="flex flex-col sm:flex-row justify-between items-end gap-10">
+                <div className="space-y-3">
+                    <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">
+                        {t.nav.salesHistory}
+                        <span className="block text-xs font-bold text-indigo-500 tracking-[0.4em] mt-4 opacity-70">{t.invoices.description}</span>
+                    </h1>
                 </div>
-                <div className="relative w-72">
+
+                <div className="relative w-full sm:w-[400px]">
                     <input
                         type="text"
                         placeholder={t.invoices.searchPlaceholder}
-                        className="w-full border-2 border-gray-100 p-2.5 pl-10 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                        className="w-full bg-white/5 border border-white/10 p-5 pl-14 rounded-3xl text-sm font-bold text-white focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-800"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
-                    <span className="absolute left-3 top-3 text-gray-400">🔍</span>
+                    <span className="absolute left-6 top-5 opacity-20">🔎</span>
                 </div>
             </div>
 
+            {/* Content Area */}
             {Object.keys(groupedData).length === 0 ? (
-                <div className="p-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                    <p className="text-gray-400 font-medium italic">{t.invoices.noMatches}</p>
+                <div className="p-32 text-center glass-card border-dashed">
+                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-4">No Transactions</p>
+                    <p className="text-gray-500 font-bold italic">{t.invoices.noMatches}</p>
                 </div>
             ) : (
-                <div className="space-y-8">
-                    {Object.entries(groupedData).map(([monthKey, monthData]) => (
-                        <div key={monthKey} className="space-y-4">
-                            {/* --- Month Header (The Rectangle) --- */}
+                <div className="space-y-12">
+                    {Object.entries(groupedData).map(([monthKey, monthData], mIdx) => (
+                        <div key={monthKey} className="space-y-6 animate-reveal" style={{ animationDelay: `${mIdx * 0.1}s` }}>
+                            {/* Month Accordion Header */}
                             <button
                                 onClick={() => toggleMonth(monthKey)}
-                                className={`w-full flex justify-between items-center p-6 rounded-2xl border-2 transition-all group ${expandedMonths[monthKey]
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100 translate-y-[-2px]'
-                                    : 'bg-white border-gray-100 text-gray-800 hover:border-indigo-200 shadow-sm'
+                                className={`w-full group relative overflow-hidden transition-all duration-500 rounded-[3rem] border ${expandedMonths[monthKey]
+                                    ? 'bg-indigo-600 border-indigo-500 shadow-2xl shadow-indigo-600/20'
+                                    : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
                                     }`}
                             >
-                                <div className="flex items-center gap-4">
-                                    <span className={`text-2xl ${expandedMonths[monthKey] ? 'opacity-100' : 'opacity-40'}`}>📅</span>
-                                    <h2 className="text-xl font-black">{monthKey}</h2>
-                                </div>
-                                <div className="flex items-center gap-6">
-                                    <div className="text-right">
-                                        <p className={`text-[10px] uppercase font-black ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-400'}`}>{t.invoices.monthlyVolume}</p>
-                                        <p className="text-lg font-black">${monthData.total.toLocaleString()}</p>
+                                <div className="flex justify-between items-center p-10 relative z-10">
+                                    <div className="flex items-center gap-10">
+                                        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all ${expandedMonths[monthKey] ? 'bg-white/20' : 'bg-white/5'}`}>
+                                            📊
+                                        </div>
+                                        <div className="text-left">
+                                            <h2 className={`text-2xl font-black tracking-tighter uppercase ${expandedMonths[monthKey] ? 'text-white' : 'text-white/80'}`}>{monthKey}</h2>
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                {Object.keys(monthData.days).length} Active selling days
+                                            </p>
+                                        </div>
                                     </div>
-                                    <span className={`text-xl transition-transform ${expandedMonths[monthKey] ? 'rotate-180' : ''}`}>▼</span>
+
+                                    <div className="flex items-center gap-12">
+                                        <div className="text-right">
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.3em] mb-1 ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-500'}`}>{t.invoices.monthlyVolume}</p>
+                                            <p className={`text-3xl font-black tracking-tighter ${expandedMonths[monthKey] ? 'text-white' : 'text-indigo-400'}`}>
+                                                ${monthData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${expandedMonths[monthKey] ? 'border-white/30 rotate-180' : 'border-white/10 text-gray-500'}`}>
+                                            ↓
+                                        </div>
+                                    </div>
                                 </div>
                             </button>
 
-                            {/* --- Days List for Month --- */}
+                            {/* Days within Month */}
                             {expandedMonths[monthKey] && (
-                                <div className="ml-4 pl-4 border-l-2 border-indigo-100 space-y-4 animate-slideDown">
-                                    {Object.entries(monthData.days).map(([dayKey, dayData]) => (
-                                        <div key={dayKey} className="space-y-3">
-                                            {/* --- Day Header (Smaller Rectangle) --- */}
+                                <div className="grid grid-cols-1 gap-6 pl-10 border-l border-white/10 animate-reveal">
+                                    {Object.entries(monthData.days).map(([dayKey, dayData], dIdx) => (
+                                        <div key={dayKey} className="space-y-4 animate-reveal" style={{ animationDelay: `${dIdx * 0.05}s` }}>
+                                            {/* Day Header */}
                                             <button
                                                 onClick={() => toggleDay(dayKey)}
-                                                className={`w-full flex justify-between items-center p-4 rounded-xl border-2 transition-all ${expandedDays[dayKey]
-                                                    ? 'bg-gray-800 border-gray-800 text-white shadow-lg'
-                                                    : 'bg-white border-gray-100 text-gray-700 hover:border-gray-300'
+                                                className={`w-full flex justify-between items-center px-8 py-6 rounded-[2.5rem] border transition-all ${expandedDays[dayKey]
+                                                    ? 'bg-white/5 border-white/10 shadow-lg'
+                                                    : 'bg-transparent border-transparent hover:bg-white/[0.02]'
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`w-2 h-2 rounded-full ${expandedDays[dayKey] ? 'bg-indigo-400' : 'bg-gray-200'}`}></span>
-                                                    <h3 className="font-bold">{new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}</h3>
-                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${expandedDays[dayKey] ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-400'
-                                                        }`}>
-                                                        {dayData.invoices.length} {t.common.orders}
+                                                <div className="flex items-center gap-6">
+                                                    <div className={`w-2 h-2 rounded-full ${expandedDays[dayKey] ? 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.5)]' : 'bg-gray-700'}`}></div>
+                                                    <h3 className={`text-sm font-black uppercase tracking-widest ${expandedDays[dayKey] ? 'text-white' : 'text-gray-500'}`}>
+                                                        {new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                                                    </h3>
+                                                    <span className={`text-[9px] font-black px-3 py-1 rounded-full ${expandedDays[dayKey] ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-gray-600'}`}>
+                                                        {dayData.invoices.length} orders
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <p className="font-black text-sm">${dayData.total.toLocaleString()}</p>
-                                                    <span className={`text-xs transition-transform ${expandedDays[dayKey] ? 'rotate-180' : ''}`}>▼</span>
+                                                <div className="flex items-center gap-8">
+                                                    <span className="text-sm font-black text-indigo-400 tracking-tighter">${dayData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                    <span className={`text-[10px] transition-transform ${expandedDays[dayKey] ? 'rotate-180 text-white' : 'text-gray-600'}`}>▼</span>
                                                 </div>
                                             </button>
 
-                                            {/* --- Invoices Table for Day --- */}
+                                            {/* Orders Table for Day */}
                                             {expandedDays[dayKey] && (
-                                                <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm animate-fadeIn">
+                                                <div className="glass-card overflow-hidden animate-reveal stagger-1">
                                                     <table className="w-full text-left">
-                                                        <thead className="bg-gray-50 text-[10px] text-gray-400 uppercase font-black border-b">
+                                                        <thead className="bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">
                                                             <tr>
-                                                                <th className="px-6 py-4">{t.invoices.order}</th>
-                                                                <th className="px-6 py-4">{t.common.customer}</th>
-                                                                <th className="px-6 py-4">{t.invoices.financials}</th>
-                                                                <th className="px-6 py-4">{t.invoices.method}</th>
-                                                                <th className="px-6 py-4 text-right">{t.invoices.receipt}</th>
+                                                                <th className="px-8 py-5">{t.invoices.order}</th>
+                                                                <th className="px-8 py-5">{t.common.customer}</th>
+                                                                <th className="px-8 py-5">{t.invoices.financials}</th>
+                                                                <th className="px-8 py-5">{t.invoices.method}</th>
+                                                                <th className="px-8 py-5 text-right">ACTION</th>
                                                             </tr>
                                                         </thead>
-                                                        <tbody className="divide-y text-xs">
-                                                            {dayData.invoices.map(inv => (
-                                                                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="font-black text-indigo-600">#{inv.id}</div>
-                                                                        <div className="text-[10px] text-gray-400">{new Date(inv.created_at).toLocaleTimeString()}</div>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {dayData.invoices.map((inv, pIdx) => (
+                                                                <tr key={inv.id} className="group hover:bg-white/[0.02] transition-colors animate-reveal" style={{ animationDelay: `${pIdx * 0.05}s` }}>
+                                                                    <td className="px-8 py-6">
+                                                                        <div className="font-black text-indigo-400 tracking-tighter">ORD-#{inv.id}</div>
+                                                                        <div className="text-[10px] font-bold text-gray-600 uppercase mt-1 tracking-widest">{new Date(inv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                                                                     </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="font-bold text-gray-800">{inv.customer?.name || t.dashboard.guest}</div>
-                                                                        <div className="text-[10px] text-gray-400">{inv.customer?.phone}</div>
+                                                                    <td className="px-8 py-6">
+                                                                        <div className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors uppercase">{inv.customer?.name || t.dashboard.guest}</div>
+                                                                        <div className="text-[10px] font-bold text-gray-600 mt-1 font-mono tracking-widest">{inv.customer?.phone}</div>
                                                                     </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="flex items-center gap-3">
-                                                                            <span className="font-black text-gray-800">${inv.total}</span>
+                                                                    <td className="px-8 py-6">
+                                                                        <div className="flex items-center gap-4">
+                                                                            <span className="text-lg font-black text-white tracking-tighter">${inv.total}</span>
                                                                             {inv.balance > 0 && (
-                                                                                <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded">
-                                                                                    -${inv.balance} {t.invoices.debt}
+                                                                                <span className="text-[8px] font-black text-red-500 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-[0.5rem] tracking-tighter">
+                                                                                    -${inv.balance} DEBT
                                                                                 </span>
                                                                             )}
                                                                         </div>
                                                                     </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-full text-[9px] font-black uppercase tracking-tight">
+                                                                    <td className="px-8 py-6">
+                                                                        <span className="px-3 py-1.5 rounded-full bg-white/5 text-gray-500 text-[9px] font-black uppercase tracking-widest group-hover:text-indigo-400 border border-white/5 transition-colors">
                                                                             {inv.payment_method}
                                                                         </span>
                                                                     </td>
-                                                                    <td className="px-6 py-4 text-right">
+                                                                    <td className="px-8 py-6 text-right">
                                                                         <button
                                                                             onClick={() => handleViewInvoice(inv.id)}
-                                                                            className="text-indigo-600 hover:text-indigo-900 font-bold underline"
+                                                                            className="text-[9px] font-black text-indigo-400/60 hover:text-white uppercase tracking-[0.2em] transition-all"
                                                                         >
                                                                             {t.invoices.viewRecord}
                                                                         </button>
@@ -227,127 +248,125 @@ export default function Invoices() {
                 </div>
             )}
 
-            {/* --- Invoice Details Modal --- */}
+            {/* Invoice Details Modal */}
             {selectedInvoice && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 backdrop-blur-sm animate-fadeIn">
-                    <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative animate-scaleUp">
-                        <button
-                            onClick={() => setSelectedInvoice(null)}
-                            className="absolute top-6 right-6 text-gray-300 hover:text-gray-600 text-3xl"
-                        >
-                            &times;
-                        </button>
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6 z-[110] animate-reveal">
+                    <div className="bg-[#0f1218] border border-white/10 p-12 rounded-[4rem] shadow-2xl w-full max-w-2xl max-h-[90vh] relative overflow-hidden flex flex-col animate-reveal">
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/5 blur-[120px] -mr-40 -mt-40"></div>
 
-                        <div className="flex justify-between items-start mb-10 border-b pb-8">
+                        <div className="flex justify-between items-start mb-12 flex-shrink-0 relative z-10">
                             <div>
-                                <h2 className="text-4xl font-black text-indigo-600 tracking-tighter">{t.invoices.invoiceTitle}</h2>
-                                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">{t.invoices.serialId}: #{selectedInvoice.id}</p>
+                                <h2 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">{t.invoices.invoiceTitle}</h2>
+                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mt-4 opacity-70">{t.invoices.serialId}: #{selectedInvoice.id}</p>
                             </div>
-                            <div className="text-right">
-                                <p className="text-xl font-black text-gray-800">{new Date(selectedInvoice.created_at).toLocaleDateString()}</p>
-                                <p className="text-sm text-gray-400 font-bold uppercase">{new Date(selectedInvoice.created_at).toLocaleTimeString()}</p>
-                            </div>
+                            <button
+                                onClick={() => setSelectedInvoice(null)}
+                                className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-gray-500 hover:text-white transition-all text-2xl"
+                            >
+                                &times;
+                            </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-8 mb-10">
-                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">{t.invoices.clientIdentity}</h4>
-                                <p className="font-black text-gray-800 text-lg">{selectedInvoice.customer?.name || t.invoices.guestAccount}</p>
-                                <p className="text-sm text-gray-500 font-medium">{selectedInvoice.customer?.phone}</p>
-                                <p className="text-xs text-gray-400 mt-1">{selectedInvoice.customer?.address}</p>
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-4 -mr-4 relative z-10">
+                            <div className="grid grid-cols-2 gap-8 mb-12">
+                                <div className="glass-card p-6 border-none bg-white/[0.03]">
+                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">{t.invoices.clientIdentity}</p>
+                                    <p className="text-lg font-black text-white uppercase tracking-tighter">{selectedInvoice.customer?.name || t.invoices.guestAccount}</p>
+                                    <p className="text-xs font-bold text-gray-500 mt-1 font-mono tracking-widest">{selectedInvoice.customer?.phone}</p>
+                                </div>
+                                <div className="glass-card p-6 border-none bg-white/[0.03]">
+                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">{t.invoices.transactionDetails}</p>
+                                    <p className="text-lg font-black text-indigo-400 uppercase tracking-tighter">{selectedInvoice.payment_method}</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">Recorded by {selectedInvoice.user?.name}</p>
+                                </div>
                             </div>
-                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                                <h4 className="text-[10px] font-black text-gray-400 uppercase mb-3 tracking-widest">{t.invoices.transactionDetails}</h4>
-                                <p className="font-black text-indigo-600 text-lg capitalize">{selectedInvoice.payment_method} {t.invoices.transfer}</p>
-                                <p className="text-xs text-gray-400 mt-1 italic leading-relaxed">{t.invoices.recordedBy} {selectedInvoice.user?.name} {t.invoices.viaPos}</p>
+
+                            <div className="space-y-6 mb-12">
+                                <h4 className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] text-center mb-8">{t.invoices.purchasedInventory}</h4>
+                                <div className="glass-card overflow-hidden">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
+                                            <tr>
+                                                <th className="px-6 py-4">{t.invoices.article}</th>
+                                                <th className="px-6 py-4 text-center">{t.common.qty}</th>
+                                                <th className="px-6 py-4 text-right">PRICE</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {selectedInvoice.items.map(item => (
+                                                <tr key={item.id} className="group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors uppercase">{item.product?.brand} {item.product?.model_code}</div>
+                                                        <div className="text-[9px] font-black text-gray-600 uppercase mt-1 tracking-widest">{item.product?.type}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm font-black text-gray-400">{item.quantity}</td>
+                                                    <td className="px-6 py-4 text-right text-sm font-black text-white">${item.subtotal}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="mb-10">
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase mb-4 tracking-widest px-1 text-center">{t.invoices.purchasedInventory}</h4>
-                            <table className="w-full text-left">
-                                <thead className="border-b-2 text-[10px] font-black text-gray-400 uppercase">
-                                    <tr>
-                                        <th className="pb-4 pl-1">{t.invoices.article}</th>
-                                        <th className="pb-4 text-center">{t.common.qty}</th>
-                                        <th className="pb-4 text-right">{t.common.price}</th>
-                                        <th className="pb-4 text-right pr-1">{t.common.subtotal}</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y text-sm">
-                                    {selectedInvoice.items.map(item => (
-                                        <tr key={item.id} className="group">
-                                            <td className="py-5 pl-1">
-                                                <div className="font-black text-gray-800 group-hover:text-indigo-600 transition-colors">{item.product?.brand} {item.product?.model_code}</div>
-                                                <div className="text-[10px] text-gray-400 uppercase font-black tracking-tighter">{t.products.types[item.product?.type] || item.product?.type} • {t.invoices.opticalGrade}</div>
-                                            </td>
-                                            <td className="py-5 text-center text-gray-500 font-bold bg-gray-50/50 rounded-lg">{item.quantity}</td>
-                                            <td className="py-5 text-right text-gray-500 font-medium">${item.price}</td>
-                                            <td className="py-5 text-right font-black text-gray-800 pr-1">${item.subtotal}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* --- Payment History (The Ledger) --- */}
-                        {selectedInvoice.payments?.length > 0 && (
-                            <div className="mb-10 bg-indigo-50/30 p-6 rounded-3xl border border-indigo-100/50">
-                                <h4 className="text-[10px] font-black text-indigo-400 uppercase mb-4 tracking-widest text-center">{t.invoices.paymentLifecycle}</h4>
-                                <div className="space-y-3">
-                                    {selectedInvoice.payments.map(pay => (
-                                        <div key={pay.id} className="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm">
-                                            <div>
-                                                <p className="font-black text-gray-700 text-xs">{new Date(pay.created_at).toLocaleDateString()}</p>
-                                                <p className="text-[9px] text-gray-400 font-bold uppercase">{pay.notes}</p>
+                            {/* Ledger */}
+                            {selectedInvoice.payments?.length > 0 && (
+                                <div className="mb-12 bg-white/[0.02] p-8 rounded-[3rem] border border-white/5 relative overflow-hidden">
+                                    <h4 className="text-[9px] font-black text-gray-500 uppercase mb-8 tracking-[0.4em] text-center">{t.invoices.paymentLifecycle}</h4>
+                                    <div className="space-y-4">
+                                        {selectedInvoice.payments.map(pay => (
+                                            <div key={pay.id} className="flex justify-between items-center bg-white/[0.03] p-5 rounded-2xl border border-white/5">
+                                                <div>
+                                                    <p className="text-xs font-black text-white/80">{new Date(pay.created_at).toLocaleDateString()}</p>
+                                                    <p className="text-[8px] text-gray-600 font-bold uppercase tracking-widest mt-1">{pay.notes || "Auto Processed"}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-emerald-400 font-black text-sm">+${pay.amount}</p>
+                                                    <p className="text-[8px] text-gray-600 font-black uppercase tracking-tighter">{pay.payment_method}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-green-600 font-black text-sm">+${pay.amount}</p>
-                                                <p className="text-[8px] text-gray-400 font-black uppercase tracking-tighter">{pay.payment_method}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-end pt-8 border-t-2 border-dashed border-gray-100">
-                            <div className="w-56 space-y-3">
-                                <div className="flex justify-between text-xs text-gray-400 font-black uppercase">
-                                    <span>{t.common.subtotal}:</span>
-                                    <span>${selectedInvoice.subtotal}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-red-300 font-black uppercase">
-                                    <span>{t.invoices.discount}:</span>
-                                    <span>-${selectedInvoice.discount}</span>
-                                </div>
-                                <div className="flex justify-between text-xs font-black text-green-500 border-t pt-2 uppercase">
-                                    <span>{t.sales.amountPaid}:</span>
-                                    <span>${selectedInvoice.amount_paid}</span>
-                                </div>
-                                {selectedInvoice.balance > 0 && (
-                                    <div className="flex justify-between text-xs font-black text-red-500 uppercase">
-                                        <span>{t.invoices.outstanding}:</span>
-                                        <span>${selectedInvoice.balance}</span>
+                                        ))}
                                     </div>
-                                )}
-                                <div className="flex justify-between text-2xl font-black text-indigo-600 pt-3 border-t-2 border-indigo-100">
-                                    <span>{t.common.total}:</span>
-                                    <span>${selectedInvoice.total}</span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end mb-12">
+                                <div className="w-64 space-y-4 pt-6 border-t border-white/10">
+                                    <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                        <span>SUBTOTAL</span>
+                                        <span className="text-white font-mono">${selectedInvoice.subtotal}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black text-red-500/60 uppercase tracking-widest">
+                                        <span>{t.invoices.discount}</span>
+                                        <span className="font-mono">-${selectedInvoice.discount}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                                        <span>PAID</span>
+                                        <span className="font-mono">${selectedInvoice.amount_paid}</span>
+                                    </div>
+                                    {selectedInvoice.balance > 0 && (
+                                        <div className="flex justify-between text-[10px] font-black text-orange-400 uppercase tracking-widest">
+                                            <span>{t.invoices.outstanding}</span>
+                                            <span className="font-mono">${selectedInvoice.balance}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between text-4xl font-black text-indigo-400 tracking-tighter pt-4 border-t border-white/5">
+                                        <span className="text-xs uppercase tracking-[0.3em] self-center">{t.common.total}</span>
+                                        <span>${selectedInvoice.total}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="mt-12 flex gap-4 no-print">
+                        <div className="flex gap-6 pt-8 mt-6 border-t border-white/5 flex-shrink-0 relative z-10 no-print">
                             <button
                                 onClick={() => window.print()}
-                                className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-95"
+                                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all border border-white/10"
                             >
-                                {t.invoices.generatePdf}
+                                🖨️ {t.invoices.generatePdf}
                             </button>
                             <button
                                 onClick={() => setSelectedInvoice(null)}
-                                className="bg-gray-100 text-gray-500 px-8 py-4 rounded-2xl font-black hover:bg-gray-200 transition-colors"
+                                className="px-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all"
                             >
                                 {t.common.dismiss}
                             </button>

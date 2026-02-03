@@ -8,6 +8,7 @@ class Product extends Model
 {
     protected $fillable = [
         'type',
+        'category_id',
         'brand',
         'model_code',
         'price',
@@ -19,6 +20,11 @@ class Product extends Model
         'image_path',
         'wholesale_price'
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function invoiceItems()
     {

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Invoice;
 use App\Models\Product;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\InvoiceItem;
 use Illuminate\Http\Request;
@@ -130,7 +131,16 @@ class DashboardController extends Controller
 
         // 6. Existing Recent/Low Stock
         $recentInvoices = Invoice::with('customer')->latest()->take(5)->get();
-        $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'alert_quantity')->get();
+        
+        $lowStockProducts = Product::with('category')
+            ->where(function($q) {
+                $q->whereHas('category', function($cq) {
+                    $cq->whereColumn('products.stock_quantity', '<=', 'categories.alert_quantity');
+                })->orWhere(function($sq) {
+                    $sq->whereNull('category_id')
+                       ->whereColumn('stock_quantity', '<=', 'alert_quantity');
+                });
+            })->get();
 
         return response()->json([
             'metrics' => [
@@ -149,8 +159,40 @@ class DashboardController extends Controller
             'top_products' => [
                 'frames' => $topFrames,
                 'lenses' => $topLenses,
-                'all' => Product::withCount('invoiceItems')->orderBy('invoice_items_count', 'desc')->take(5)->get()
+                'all' => Product::withCount(['invoiceItems as total_sold' => function($q) use ($start, $end) {
+                        $q->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                          ->whereBetween('invoices.created_at', [$start, $end])
+                          ->select(DB::raw('SUM(quantity)'));
+                    }])
+                    ->orderBy('total_sold', 'desc')
+                    ->take(5)
+                    ->get()
             ],
+            'category_champions' => Category::all()->map(function ($category) use ($start, $end) {
+                $topProducts = Product::where('category_id', $category->id)
+                    ->withCount(['invoiceItems as total_sold' => function($q) use ($start, $end) {
+                        $q->join('invoices', 'invoice_items.invoice_id', '=', 'invoices.id')
+                          ->whereBetween('invoices.created_at', [$start, $end])
+                          ->select(DB::raw('SUM(quantity)'));
+                    }])
+                    ->orderBy('total_sold', 'desc')
+                    ->take(3)
+                    ->get();
+
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'type' => $category->type,
+                    'top_items' => $topProducts->filter(fn($p) => $p->total_sold > 0)->map(function($p) {
+                        return [
+                            'brand' => $p->brand,
+                            'model_code' => $p->model_code,
+                            'total_sold' => (int)$p->total_sold,
+                            'price' => $p->price
+                        ];
+                    })
+                ];
+            })->filter(fn($c) => count($c['top_items']) > 0)->values(),
             'recent_invoices' => $recentInvoices,
             'low_stock_items' => $lowStockProducts,
             'outstanding_invoices' => Invoice::with('customer')->whereRaw('amount_paid < total')->latest()->get()

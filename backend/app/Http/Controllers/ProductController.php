@@ -9,7 +9,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::query();
+        $query = Product::with('category');
         
         if ($request->has('type')) {
             $query->where('type', $request->type);
@@ -20,7 +20,10 @@ class ProductController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('brand', 'like', "%{$search}%")
                   ->orWhere('model_code', 'like', "%{$search}%")
-                  ->orWhere('barcode', 'like', "%{$search}%");
+                  ->orWhere('barcode', 'like', "%{$search}%")
+                  ->orWhereHas('category', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
             });
         }
 
@@ -31,7 +34,8 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|string',
-            'brand' => 'required|string',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string',
             'model_code' => 'nullable|string',
             'price' => 'required|numeric',
             'stock_quantity' => 'required|integer',
@@ -49,19 +53,20 @@ class ProductController extends Controller
         }
 
         $product = Product::create($validated);
-        return response()->json($product, 201);
+        return response()->json($product->load('category'), 201);
     }
 
     public function show(Product $product)
     {
-        return response()->json($product);
+        return response()->json($product->load('category'));
     }
 
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
             'type' => 'string',
-            'brand' => 'string',
+            'category_id' => 'nullable|exists:categories,id',
+            'brand' => 'nullable|string',
             'model_code' => 'nullable|string',
             'price' => 'numeric',
             'stock_quantity' => 'integer',
@@ -79,7 +84,7 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
-        return response()->json($product);
+        return response()->json($product->load('category'));
     }
 
     public function destroy(Product $product)

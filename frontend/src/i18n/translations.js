@@ -16,7 +16,8 @@ export const translations = {
             frames: 'Frames',
             sunglasses: 'Sunglasses',
             lenses: 'Lenses',
-            others: 'Others'
+            others: 'Others',
+            categories: 'Categories'
         },
         login: {
             title: 'OptiStore Login',
@@ -55,6 +56,8 @@ export const translations = {
             customer: 'Customer',
             sum: 'Sum',
             method: 'Method',
+            marketChampions: 'Market Champions',
+            elitePerformers: 'Elite Performers',
             outstandingBalances: 'Outstanding Balances',
             unpaidOrders: 'Unpaid orders requiring follow-up',
             findPlaceholder: 'Find by name or #...',
@@ -124,7 +127,8 @@ export const translations = {
         products: {
             inventory: 'Inventory',
             addProduct: 'Add Product',
-            brandModel: 'Brand / Model',
+            brandModel: 'Category / Model',
+            category: 'Category',
             sellPrice: 'Sell Price',
             wholesalePrice: 'Wholesale Price (Cost)',
             noImg: 'No Img',
@@ -153,6 +157,18 @@ export const translations = {
                 mixed: 'Mixed',
                 select: 'Select Material'
             }
+        },
+        categories: {
+            title: 'Categories',
+            addCategory: 'Add Category',
+            editCategory: 'Edit Category',
+            newCategory: 'New Category',
+            name: 'Category Name',
+            type: 'Main Type',
+            saveCategory: 'Save Category',
+            failedSave: 'Failed to save category',
+            deleteConfirm: 'Are you sure? This category will be removed.',
+            hasProducts: 'Cannot delete category with associated products'
         },
         customers: {
             customers: 'Customers',
@@ -281,7 +297,8 @@ export const translations = {
             frames: 'إطارات',
             sunglasses: 'نظارات شمسية',
             lenses: 'عدسات',
-            others: 'أخرى'
+            others: 'أخرى',
+            categories: 'الأقسام'
         },
         login: {
             title: 'تسجيل الدخول - اوبتي ستور',
@@ -320,6 +337,8 @@ export const translations = {
             customer: 'العميل',
             sum: 'المجموع',
             method: 'الطريقة',
+            marketChampions: 'أبطال الفئات',
+            elitePerformers: 'الأكثر مبيعاً',
             outstandingBalances: 'الأرصدة المستحقة',
             unpaidOrders: 'طلبات غير مدفوعة تتطلب متابعة',
             findPlaceholder: 'بحث بالاسم أو الرقم...',
@@ -389,7 +408,8 @@ export const translations = {
         products: {
             inventory: 'المخزون',
             addProduct: 'إضافة منتج',
-            brandModel: 'الماركة / الموديل',
+            brandModel: 'القسم / الموديل',
+            category: 'القسم',
             sellPrice: 'سعر البيع',
             wholesalePrice: 'سعر الجملة (التكلفة)',
             noImg: 'بدون صورة',
@@ -418,6 +438,18 @@ export const translations = {
                 mixed: 'مختلط',
                 select: 'اختر المادة'
             }
+        },
+        categories: {
+            title: 'الأقسام',
+            addCategory: 'إضافة قسم',
+            editCategory: 'تعديل القسم',
+            newCategory: 'قسم جديد',
+            name: 'اسم القسم',
+            type: 'النوع الرئيسي',
+            saveCategory: 'حفظ القسم',
+            failedSave: 'فشل حفظ القسم',
+            deleteConfirm: 'هل أنت متأكد؟ سيتم حذف هذا القسم.',
+            hasProducts: 'لا يمكن حذف قسم مرتبط بمنتجات'
         },
         customers: {
             customers: 'العملاء',

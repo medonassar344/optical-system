@@ -14,6 +14,7 @@ export default function Sales() {
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showCustomerModal, setShowCustomerModal] = useState(false);
+    const [selectedType, setSelectedType] = useState('all');
     const [amountPaid, setAmountPaid] = useState('');
 
     useEffect(() => {
@@ -31,7 +32,6 @@ export default function Sales() {
         setCustomers(data.data);
     };
 
-    // Deep fetch selected customer to get invoices
     const selectCustomer = async (customer) => {
         setCustomerSearch(customer.name);
         setShowResults(false);
@@ -112,7 +112,7 @@ export default function Sales() {
             setSelectedCustomer(null);
             setCustomerSearch('');
             setAmountPaid('');
-            fetchProducts(); // Refresh stock
+            fetchProducts();
         } catch (e) {
             console.error(e);
             alert(t.sales.saleFailed + ': ' + (e.response?.data?.message || t.dashboard.noData));
@@ -125,7 +125,7 @@ export default function Sales() {
         try {
             const { data } = await api.post('/customers', formData);
             setCustomers([...customers, data]);
-            selectCustomer(data); // Auto select new customer
+            selectCustomer(data);
             setShowCustomerModal(false);
         } catch (e) {
             console.error(e);
@@ -133,11 +133,15 @@ export default function Sales() {
         }
     };
 
-    const filteredProducts = products.filter(p =>
-        p.brand.toLowerCase().includes(search.toLowerCase()) ||
-        p.model_code?.toLowerCase().includes(search.toLowerCase()) ||
-        p.barcode?.includes(search)
-    );
+    const filteredProducts = products.filter(p => {
+        const matchesSearch = p.brand.toLowerCase().includes(search.toLowerCase()) ||
+            p.model_code?.toLowerCase().includes(search.toLowerCase()) ||
+            p.barcode?.includes(search);
+
+        const matchesType = selectedType === 'all' || p.type === selectedType;
+
+        return matchesSearch && matchesType;
+    });
 
     const filteredCustomers = customers.filter(c =>
         c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
@@ -145,51 +149,108 @@ export default function Sales() {
     );
 
     return (
-        <div className="flex h-[calc(100vh-100px)] gap-6">
-            {/* Left: Product List */}
-            <div className="flex-1 flex flex-col gap-4">
-                <div className="bg-white p-4 rounded shadow">
-                    <input
-                        type="text"
-                        placeholder={t.sales.searchProducts}
-                        className="w-full border p-2 rounded"
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-reveal">
+            {/* Left: Product Selection */}
+            <div className="flex-1 flex flex-col gap-8 min-w-0">
+                {/* Refined Search & Filter Arrangement */}
+                <div className="glass-card p-4 flex flex-col lg:flex-row items-center gap-4 flex-shrink-0">
+                    <div className="relative flex-1 w-full">
+                        <input
+                            type="text"
+                            placeholder={t.sales.searchProducts}
+                            className="w-full bg-white/5 border border-white/10 p-4 pl-12 rounded-2xl text-sm font-bold text-white focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                        />
+                        <span className="absolute left-5 top-4 opacity-30 text-lg">🔎</span>
+                    </div>
+
+                    <div className="flex gap-1.5 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-full lg:w-auto overflow-x-auto no-scrollbar">
+                        {['all', 'frames', 'lenses', 'sunglasses', 'others'].map(type => (
+                            <button
+                                key={type}
+                                onClick={() => setSelectedType(type)}
+                                className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedType === type ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}`}
+                            >
+                                {t.nav[type] || t.products.types?.[type] || type}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-                <div className="flex-1 overflow-auto grid grid-cols-3 gap-4 pb-4">
-                    {filteredProducts.map(product => (
+
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pb-10 content-start">
+                    {filteredProducts.map((product, idx) => (
                         <div key={product.id}
-                            className="bg-white p-4 rounded shadow flex flex-col justify-between cursor-pointer hover:ring-2 ring-indigo-500 relative"
+                            className="glass-card p-6 flex flex-col justify-between cursor-pointer border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.04] transition-all group relative overflow-hidden active:scale-[0.98] animate-reveal"
                             onClick={() => addToCart(product)}
+                            style={{ animationDelay: `${idx * 0.03}s` }}
                         >
-                            <div className="absolute top-2 right-2">
-                                {product.image_path && <img src={`http://localhost:8000${product.image_path}`} className="w-10 h-10 rounded object-cover" />}
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-[40px] -mr-12 -mt-12 group-hover:bg-indigo-500/10 transition-colors"></div>
+
+                            <div className="flex justify-between items-start mb-6">
+                                <div className="z-10 min-w-0">
+                                    <h3 className="font-extrabold text-white text-lg group-hover:text-indigo-400 transition-colors uppercase tracking-tight leading-none mb-2 truncate">
+                                        {product.brand}
+                                    </h3>
+                                    <p className="text-[10px] text-indigo-500/60 font-black uppercase tracking-[0.2em] mb-1">{product.category?.name}</p>
+                                    <p className="text-[9px] text-gray-600 font-bold uppercase tracking-widest">{product.model_code}</p>
+                                </div>
+                                {product.image_path ? (
+                                    <img
+                                        src={`http://localhost:8000${product.image_path}`}
+                                        className="w-16 h-16 rounded-2xl object-cover border border-white/10 shadow-2xl group-hover:scale-110 transition-transform duration-500 flex-shrink-0"
+                                    />
+                                ) : (
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-2xl opacity-20 group-hover:opacity-40 transition-opacity">
+                                        👓
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <h3 className="font-bold text-lg">{product.brand}</h3>
-                                <p className="text-gray-500">{product.model_code}</p>
-                                <p className="text-sm text-gray-400 capitalize">{t.products.types[product.type] || product.type}</p>
-                            </div>
-                            <div className="mt-4 flex justify-between items-end">
-                                <span className="font-bold text-indigo-600">${product.price}</span>
-                                <span className={`text-xs px-2 py-1 rounded ${product.stock_quantity > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                    {t.common.stock}: {product.stock_quantity}
-                                </span>
+
+                            <div className="z-10 flex justify-between items-end mt-4">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1">{t.products.price}</span>
+                                    <span className="text-2xl font-black text-white group-hover:text-glow transition-all">${parseFloat(product.price).toFixed(2)}</span>
+                                </div>
+                                <div className="flex flex-col items-end">
+                                    <div className={`flex items-center gap-1.5 mb-1`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${product.stock_quantity > 0 ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+                                        <span className={`text-[10px] font-black uppercase tracking-widest ${product.stock_quantity > 0 ? 'text-gray-400' : 'text-red-400'}`}>
+                                            {product.stock_quantity}
+                                        </span>
+                                    </div>
+                                    <span className="text-[8px] font-bold text-gray-600 uppercase tracking-tighter">{t.common.stock}</span>
+                                </div>
                             </div>
                         </div>
                     ))}
+                    {filteredProducts.length === 0 && (
+                        <div className="col-span-full py-20 text-center glass-card border-dashed">
+                            <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-2">{t.dashboard.noData}</p>
+                            <p className="text-gray-500 font-bold italic">{t.invoices.noMatches}</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Right: Cart & Customer Panel */}
-            <div className="w-96 flex flex-col gap-4">
-                {/* Customer Selection */}
-                <div className="bg-white p-4 rounded shadow">
-                    <h2 className="font-bold mb-2">{t.common.customer}</h2>
-                    <div className="flex gap-2 relative">
+            {/* Right: Checkout Sidebar */}
+            <aside className="w-full lg:w-[450px] flex flex-col gap-6 flex-shrink-0">
+                {/* Customer Section */}
+                <div className="glass-card p-8 flex flex-col gap-6 relative overflow-hidden flex-shrink-0">
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-500/5 blur-[60px] -ml-16 -mt-16"></div>
+                    <div className="flex justify-between items-center relative z-10">
+                        <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">{t.common.customer}</h2>
+                        <button
+                            onClick={() => setShowCustomerModal(true)}
+                            className="w-8 h-8 flex items-center justify-center bg-white/5 border border-white/10 text-indigo-400 rounded-xl hover:bg-white/10 active:scale-95 transition-all text-xl"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <div className="relative z-10">
                         <input
-                            className="w-full border p-2 rounded"
+                            className="w-full bg-white/5 border border-white/10 p-4 pl-12 rounded-2xl text-sm font-bold text-white focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-700"
                             placeholder={t.sales.searchCustomer}
                             value={customerSearch}
                             onChange={(e) => {
@@ -199,94 +260,56 @@ export default function Sales() {
                             }}
                             onFocus={() => setShowResults(true)}
                         />
-                        <button
-                            onClick={() => setShowCustomerModal(true)}
-                            className="px-3 py-2 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
-                            title={t.sales.newCustomerBtn}
-                        >
-                            +
-                        </button>
+                        <span className="absolute left-5 top-4.5 opacity-20">🔎</span>
 
                         {showResults && customerSearch && (
-                            <div className="absolute top-12 left-0 w-full bg-white shadow-xl border rounded z-10 max-h-60 overflow-y-auto">
+                            <div className="absolute top-16 left-0 w-full glass-pane shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/10 rounded-2xl z-50 max-h-60 overflow-y-auto custom-scrollbar animate-reveal">
                                 {filteredCustomers.map(c => (
                                     <div
                                         key={c.id}
-                                        className="p-2 hover:bg-gray-100 cursor-pointer border-b"
+                                        className="p-5 hover:bg-white/5 cursor-pointer border-b border-white/5 group transition-colors"
                                         onClick={() => selectCustomer(c)}
                                     >
-                                        <div className="font-bold">{c.name}</div>
-                                        <div className="text-xs text-gray-500">{c.phone}</div>
+                                        <div className="font-bold text-white group-hover:text-indigo-400">{c.name}</div>
+                                        <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{c.phone}</div>
                                     </div>
                                 ))}
-                                {filteredCustomers.length === 0 && (
-                                    <div className="p-2 text-gray-500 text-sm">{t.sales.noMatches}</div>
-                                )}
                             </div>
                         )}
                     </div>
-                    {/* Selected Customer Valid Details */}
+
                     {selectedCustomer && (
-                        <div className="mt-4 text-sm bg-blue-50 p-3 rounded">
-                            <div className="flex justify-between">
-                                <p><strong>{t.common.phone}:</strong> {selectedCustomer.phone || t.common.na}</p>
-                                <p><strong>IPD:</strong> {selectedCustomer.medical_info?.ipd || t.common.na}</p>
+                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl animate-reveal relative z-10">
+                            <div className="flex justify-between items-start mb-6">
+                                <div>
+                                    <p className="text-xl font-black text-white tracking-tight">{selectedCustomer.name}</p>
+                                    <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-1">{selectedCustomer.phone}</p>
+                                </div>
+                                <div className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
+                                    <span className="text-[9px] font-black text-indigo-400 uppercase">IPD: {selectedCustomer.medical_info?.ipd || 'N/A'}</span>
+                                </div>
                             </div>
 
-                            {/* Prescription Table */}
                             {selectedCustomer.medical_info && (
-                                <div className="mt-2 bg-white rounded border overflow-hidden">
-                                    <table className="w-full text-center text-xs">
-                                        <thead className="bg-gray-100">
-                                            <tr>
-                                                <th className="py-1">{t.customers.eye}</th>
-                                                <th>{t.customers.sph}</th>
-                                                <th>{t.customers.cyl}</th>
-                                                <th>{t.customers.axis}</th>
-                                                <th>{t.customers.add}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y">
-                                            <tr>
-                                                <td className="font-bold text-blue-600 bg-blue-50">{t.customers.rightEye}</td>
-                                                <td>{selectedCustomer.medical_info.od?.sph}</td>
-                                                <td>{selectedCustomer.medical_info.od?.cyl}</td>
-                                                <td>{selectedCustomer.medical_info.od?.axis}</td>
-                                                <td>{selectedCustomer.medical_info.od?.add}</td>
-                                            </tr>
-                                            <tr>
-                                                <td className="font-bold text-green-600 bg-green-50">{t.customers.leftEye}</td>
-                                                <td>{selectedCustomer.medical_info.os?.sph}</td>
-                                                <td>{selectedCustomer.medical_info.os?.cyl}</td>
-                                                <td>{selectedCustomer.medical_info.os?.axis}</td>
-                                                <td>{selectedCustomer.medical_info.os?.add}</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                <div className="grid grid-cols-2 gap-3 mb-6">
+                                    <EyeStat label="OD (Right)" data={selectedCustomer.medical_info.od} color="indigo" />
+                                    <EyeStat label="OS (Left)" data={selectedCustomer.medical_info.os} color="purple" />
                                 </div>
                             )}
 
-                            {/* Order History */}
-                            {selectedCustomer.invoices && selectedCustomer.invoices.length > 0 && (
-                                <div className="mt-3 border-t pt-2">
-                                    <h4 className="font-bold text-gray-600 mb-2">{t.customers.orderHistory}</h4>
-                                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                                        {selectedCustomer.invoices.map(inv => (
-                                            <div key={inv.id} className="bg-white p-2 rounded border flex flex-col gap-1">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-bold text-indigo-700">#{inv.id}</span>
-                                                    <span className="text-xs text-gray-500">{new Date(inv.created_at).toLocaleDateString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-medium">${inv.total}</span>
-                                                    <button
-                                                        onClick={() => addInvoiceToCart(inv)}
-                                                        className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200"
-                                                    >
-                                                        {t.sales.copyItems}
-                                                    </button>
-                                                </div>
-                                            </div>
+                            {selectedCustomer.invoices?.length > 0 && (
+                                <div className="space-y-3">
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">{t.customers.orderHistory}</p>
+                                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar no-scrollbar">
+                                        {selectedCustomer.invoices.slice(0, 3).map(inv => (
+                                            <button
+                                                key={inv.id}
+                                                onClick={() => addInvoiceToCart(inv)}
+                                                className="flex-shrink-0 bg-white/5 hover:bg-indigo-600 border border-white/5 p-3 rounded-2xl transition-all group/inv"
+                                            >
+                                                <p className="text-[10px] font-black text-white group-hover/inv:text-white uppercase">#{inv.id}</p>
+                                                <p className="text-[11px] font-black text-indigo-400 group-hover/inv:text-white mt-1">${inv.total}</p>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -295,87 +318,127 @@ export default function Sales() {
                     )}
                 </div>
 
-                {/* Cart */}
-                <div className="bg-white rounded shadow flex flex-col flex-1 h-96">
-                    <div className="p-4 border-b">
-                        <h2 className="text-xl font-bold">{t.sales.currentSale}</h2>
+                {/* Cart Control */}
+                <div className="glass-card flex-1 flex flex-col relative overflow-hidden min-h-0">
+                    <div className="absolute bottom-0 right-0 w-48 h-48 bg-purple-600/5 blur-[80px] -mr-24 -mb-24"></div>
+
+                    <div className="p-8 border-b border-white/5 flex justify-between items-center flex-shrink-0">
+                        <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">{t.sales.currentSale}</h2>
+                        <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                            {cart.length} {t.common.items}
+                        </span>
                     </div>
 
-                    <div className="flex-1 overflow-auto p-4 space-y-4">
+                    <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
                         {cart.map(item => (
-                            <div key={item.product_id} className="flex justify-between items-center bg-gray-50 p-3 rounded">
-                                <div>
-                                    <h4 className="font-medium">{item.brand} {item.model}</h4>
-                                    <div className="flex items-center gap-1 text-sm text-gray-500">
-                                        <span>$</span>
+                            <div key={item.product_id} className="flex justify-between items-center group animate-reveal">
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="font-bold text-white text-sm truncate uppercase tracking-tight">{item.brand} {item.model}</h4>
+                                    <div className="flex items-center gap-2 mt-1">
                                         <input
                                             type="number"
-                                            step="0.01"
-                                            className="w-16 border-b border-transparent hover:border-gray-300 focus:border-indigo-500 outline-none bg-transparent"
+                                            className="w-16 bg-white/5 border-b border-white/10 py-1 text-xs font-black text-indigo-400 focus:border-indigo-500 outline-none"
                                             value={item.price}
                                             onChange={(e) => updatePrice(item.product_id, e.target.value)}
                                         />
+                                        <span className="text-[10px] font-bold text-gray-600 uppercase">x {item.quantity}</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} className="px-2 bg-gray-200 rounded">-</button>
-                                    <span>{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="px-2 bg-gray-200 rounded">+</button>
-                                    <button onClick={() => removeFromCart(item.product_id)} className="text-red-500 ml-2">&times;</button>
+                                <div className="flex items-center gap-4 pl-4">
+                                    <div className="flex bg-white/5 rounded-xl border border-white/5 p-1">
+                                        <button onClick={() => updateQuantity(item.product_id, item.quantity - 1)} className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-white transition-colors">-</button>
+                                        <span className="w-8 h-7 flex items-center justify-center text-[10px] font-black text-white">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.product_id, item.quantity + 1)} className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-white transition-colors">+</button>
+                                    </div>
+                                    <button onClick={() => removeFromCart(item.product_id)} className="text-gray-600 hover:text-red-500 transition-colors text-xl font-light">&times;</button>
                                 </div>
                             </div>
                         ))}
-                        {cart.length === 0 && <div className="text-center text-gray-400 mt-10">{t.sales.cartEmpty}</div>}
-                    </div>
-
-                    <div className="p-4 border-t bg-gray-50">
-                        <div className="flex justify-between text-lg mb-2">
-                            <span className="font-bold text-gray-700">{t.common.total}:</span>
-                            <span className="font-bold text-indigo-600">${calculateTotal().toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-sm font-bold text-gray-500 uppercase">{t.sales.amountPaid}</span>
-                            <div className="flex items-center gap-1">
-                                <span className="text-gray-400">$</span>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    className="w-24 border-b border-gray-300 focus:border-indigo-500 outline-none text-right font-bold text-green-600 bg-transparent"
-                                    placeholder={calculateTotal().toFixed(2)}
-                                    value={amountPaid}
-                                    onChange={(e) => setAmountPaid(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                        {amountPaid !== '' && parseFloat(amountPaid) < calculateTotal() && (
-                            <div className="flex justify-between text-xs text-red-500 font-bold mb-4 bg-red-50 p-2 rounded">
-                                <span>{t.sales.remainingBalance}</span>
-                                <span>${(calculateTotal() - parseFloat(amountPaid)).toFixed(2)}</span>
+                        {cart.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-center py-10 opacity-30">
+                                <span className="text-4xl mb-4">🛒</span>
+                                <p className="text-xs font-black uppercase tracking-[0.2em]">{t.sales.cartEmpty}</p>
                             </div>
                         )}
+                    </div>
+
+                    <div className="p-8 border-t border-white/5 bg-white/[0.01] space-y-6 relative z-10 flex-shrink-0">
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">{t.common.total}</span>
+                                <span className="text-3xl font-black text-white tracking-tighter text-glow">${calculateTotal().toFixed(2)}</span>
+                            </div>
+
+                            <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                                <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest">{t.sales.amountPaid}</span>
+                                <div className="relative">
+                                    <input
+                                        type="number"
+                                        className="w-32 bg-white/5 border-b-2 border-indigo-500/30 p-2 text-right text-2xl font-black text-indigo-400 outline-none focus:border-indigo-500 transition-all placeholder:text-gray-800"
+                                        placeholder={calculateTotal().toFixed(2)}
+                                        value={amountPaid}
+                                        onChange={(e) => setAmountPaid(e.target.value)}
+                                    />
+                                    <span className="absolute -left-4 top-2 text-gray-700 font-black">$</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <button
                             onClick={handleCheckout}
                             disabled={loading || cart.length === 0}
-                            className="w-full bg-indigo-600 text-white py-3 rounded font-bold hover:bg-indigo-700 disabled:opacity-50"
+                            className="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/30 hover:bg-indigo-500 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 disabled:grayscale"
                         >
                             {loading ? t.sales.processing : t.sales.completeSale}
                         </button>
                     </div>
                 </div>
-            </div>
+            </aside>
 
-            {/* New Customer Modal */}
+            {/* Redesigned Customer Modal */}
             {showCustomerModal && (
-                <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
-                    <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <h2 className="text-xl font-bold mb-4">{t.customers.newCustomer}</h2>
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-3xl flex items-center justify-center p-6 z-[100] animate-reveal">
+                    <div className="bg-[#0f1218] border border-white/10 p-12 rounded-[3.5rem] shadow-2xl w-full max-w-2xl max-h-[85vh] relative overflow-hidden flex flex-col">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[100px] -mr-32 -mt-32"></div>
+                        <h2 className="text-3xl font-black text-white mb-10 tracking-tight leading-none uppercase">{t.customers.newCustomer}</h2>
                         <CustomerForm
                             onSubmit={handleNewCustomer}
                             onCancel={() => setShowCustomerModal(false)}
+                            darkTheme={true}
                         />
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function EyeStat({ label, data, color }) {
+    const colors = {
+        indigo: 'text-indigo-400 bg-indigo-500/5 border-indigo-500/10',
+        purple: 'text-purple-400 bg-purple-500/5 border-purple-500/10'
+    };
+    return (
+        <div className={`p-4 rounded-2xl border ${colors[color]}`}>
+            <p className="text-[9px] font-black uppercase tracking-widest mb-3 opacity-60">{label}</p>
+            <div className="grid grid-cols-2 gap-y-2 gap-x-4">
+                <div className="flex justify-between">
+                    <span className="text-[8px] font-bold uppercase opacity-40">SPH</span>
+                    <span className="text-xs font-black">{data?.sph || '0.00'}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-[8px] font-bold uppercase opacity-40">CYL</span>
+                    <span className="text-xs font-black">{data?.cyl || '0.00'}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-[8px] font-bold uppercase opacity-40">AXIS</span>
+                    <span className="text-xs font-black">{data?.axis || '0'}</span>
+                </div>
+                <div className="flex justify-between">
+                    <span className="text-[8px] font-bold uppercase opacity-40">ADD</span>
+                    <span className="text-xs font-black">{data?.add || '0.00'}</span>
+                </div>
+            </div>
         </div>
     );
 }

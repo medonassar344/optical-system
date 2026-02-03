@@ -16,6 +16,7 @@ export default function Layout() {
     const navItems = [
         { name: t.nav.dashboard, path: '/' },
         { name: t.nav.inventory, path: '/products' },
+        { name: t.nav.categories, path: '/categories' },
         { name: t.nav.customers, path: '/customers' },
         { name: t.nav.sales, path: '/sales' },
         { name: t.nav.safe, path: '/safe' },
@@ -25,52 +26,79 @@ export default function Layout() {
     const isRtl = language === 'ar';
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="flex h-screen bg-[#0a0c10] text-gray-200 overflow-hidden font-sans">
             {/* Sidebar */}
-            <div className={`w-64 bg-white shadow-lg ${isRtl ? 'order-last border-l' : 'border-r'}`}>
-                <div className="p-6 border-b">
-                    <h1 className="text-2xl font-bold text-indigo-600">{t.appName}</h1>
-                    <p className="text-sm text-gray-500 mt-1">{t.managedBy} {user?.name}</p>
+            <aside className={`w-72 relative flex flex-col bg-white/[0.01] backdrop-blur-2xl border-white/5 ${isRtl ? 'order-last border-l' : 'border-r'}`}>
+                <div className="p-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.4)] flex items-center justify-center font-bold text-xl">
+                            O
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight text-white">{t.appName}</h1>
+                            <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-0.5">{t.managedBy} {user?.name}</p>
+                        </div>
+                    </div>
                 </div>
-                <nav className="mt-6">
+
+                <nav className="flex-1 px-4 space-y-2 overflow-y-auto pt-4 custom-scrollbar">
                     {navItems.map((item) => (
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center px-6 py-3 text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 ${location.pathname === item.path ? 'bg-indigo-50 text-indigo-600 ' + (isRtl ? 'border-l-4 border-indigo-600' : 'border-r-4 border-indigo-600') : ''
+                            className={`flex items-center px-6 py-3.5 rounded-2xl transition-all duration-300 group ${location.pathname === item.path
+                                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.05)]'
+                                : 'text-gray-500 hover:bg-white/[0.03] hover:text-gray-200'
                                 }`}
                         >
-                            <span className="font-medium">{item.name}</span>
+                            <span className="font-semibold tracking-wide">{item.name}</span>
+                            {location.pathname === item.path && (
+                                <div className={`ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,1)]`}></div>
+                            )}
                         </Link>
                     ))}
+                </nav>
+
+                <div className="p-6 border-t border-white/5">
                     <button
                         onClick={handleLogout}
-                        className="w-full text-left rtl:text-right flex items-center px-6 py-3 text-red-600 hover:bg-red-50 mt-auto"
+                        className="w-full flex items-center px-6 py-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors group"
                     >
-                        {t.logout}
+                        <span className="font-bold">{t.logout}</span>
                     </button>
-                </nav>
-            </div>
+                </div>
+            </aside>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-auto">
-                <header className="bg-white shadow-sm p-4 flex justify-between items-center px-8">
-                    <h2 className="text-xl font-semibold text-gray-800">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <header className="h-24 flex justify-between items-center px-12 bg-white/[0.01] border-b border-white/5">
+                    <h2 className="text-2xl font-bold text-white tracking-tight">
                         {navItems.find(i => i.path === location.pathname)?.name || t.appName}
                     </h2>
-                    <div className="flex items-center gap-4">
+
+                    <div className="flex items-center gap-6">
                         <button
                             onClick={toggleLanguage}
-                            className="px-3 py-1 text-sm font-bold bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                            className="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all font-bold text-xs"
                         >
-                            {language === 'en' ? 'العربية' : 'English'}
+                            {language === 'en' ? 'AR' : 'EN'}
                         </button>
-                        <span className="text-sm bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
-                            {user?.role === 'admin' ? t.admin : t.employee}
-                        </span>
+
+                        <div className="flex items-center gap-4 bg-white/5 p-1.5 pr-6 rounded-2xl border border-white/5">
+                            <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-sm font-bold shadow-lg">
+                                {user?.name?.[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <p className="text-sm font-bold text-white leading-none">{user?.name}</p>
+                                <p className="text-[10px] text-gray-500 font-bold mt-1 uppercase tracking-tighter">
+                                    {user?.role === 'admin' ? t.admin : t.employee}
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </header>
-                <main className="p-8">
+
+                <main className="flex-1 overflow-y-auto p-12 custom-scrollbar">
                     <Outlet />
                 </main>
             </div>

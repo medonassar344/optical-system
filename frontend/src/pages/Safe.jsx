@@ -118,151 +118,158 @@ export default function Safe() {
     );
 
     return (
-        <div className="space-y-6 animate-fadeIn pb-20">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-black text-gray-800 tracking-tight flex items-center gap-3">
-                        <span className="bg-indigo-600 text-white p-2 rounded-xl text-xl shadow-lg shadow-indigo-100">🏦</span>
+        <div className="space-y-12 pb-20 max-w-7xl mx-auto animate-reveal">
+            {/* Header / Top Stats */}
+            <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
+                <div className="space-y-3">
+                    <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">
                         {t.nav.safe}
+                        <span className="block text-xs font-bold text-indigo-500 tracking-[0.4em] mt-4 opacity-70">{t.safe.description}</span>
                     </h1>
-                    <p className="text-gray-500 text-sm mt-1">{t.safe.description}</p>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-6 w-full lg:w-auto">
+                    <div className="glass-card flex-1 min-w-[280px] p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-[60px] -mr-16 -mt-16 group-hover:bg-indigo-500/20 transition-all"></div>
+                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.3em] mb-2">{t.safe.totalBalance}</p>
+                        <div className="flex items-end gap-3">
+                            <span className="text-4xl font-black text-white tracking-tighter">${parseFloat(totalInSafe).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                            <span className="text-xs font-bold text-emerald-400 mb-1.5 uppercase tracking-widest">{t.dashboard.live}</span>
+                        </div>
+                    </div>
                     <button
                         onClick={() => setShowManualModal(true)}
-                        className="bg-indigo-600 text-white px-5 py-2.5 rounded-2xl hover:bg-indigo-700 font-black shadow-lg shadow-indigo-100 flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
+                        className="bg-indigo-600 hover:bg-indigo-500 text-white px-10 py-6 rounded-3xl font-black transition-all shadow-2xl shadow-indigo-600/30 active:scale-95 uppercase tracking-[0.2em] text-xs h-fit"
                     >
-                        <span>➕</span> {t.safe.addEntry}
+                        {t.safe.addEntry}
                     </button>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-right min-w-[220px]">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t.safe.totalBalance}</p>
-                        <p className="text-3xl font-black text-indigo-600">${parseFloat(totalInSafe).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                    </div>
                 </div>
             </div>
 
-            {/* --- Filters --- */}
-            <div className="flex gap-2 bg-gray-100 p-1.5 rounded-xl w-fit">
+            {/* Filters */}
+            <div className="flex flex-wrap gap-4 items-center bg-white/[0.02] border border-white/5 p-2 rounded-[2rem] w-fit">
                 <FilterBtn label={t.safe.allStreams} active={filter === 'all'} onClick={() => setFilter('all')} />
                 <FilterBtn label={t.safe.newOrders} active={filter === 'initial'} onClick={() => setFilter('initial')} />
                 <FilterBtn label={t.safe.remaining} active={filter === 'debt_payment'} onClick={() => setFilter('debt_payment')} />
                 <FilterBtn label={t.safe.manual} active={filter === 'manual'} onClick={() => setFilter('manual')} />
             </div>
 
+            {/* Safe Content */}
             {Object.keys(groupedData).length === 0 ? (
-                <div className="p-20 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
-                    <p className="text-gray-400 font-medium italic">{t.safe.noMatches}</p>
+                <div className="p-32 text-center glass-card border-dashed">
+                    <p className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] mb-4">Empty Vault</p>
+                    <p className="text-gray-500 font-bold italic">{t.safe.noMatches}</p>
                 </div>
             ) : (
-                <div className="space-y-8">
-                    {Object.entries(groupedData).map(([monthKey, monthData]) => (
-                        <div key={monthKey} className="space-y-4">
-                            {/* --- Month Header --- */}
+                <div className="space-y-12">
+                    {Object.entries(groupedData).map(([monthKey, monthData], mIdx) => (
+                        <div key={monthKey} className="space-y-6 animate-reveal" style={{ animationDelay: `${mIdx * 0.1}s` }}>
+                            {/* Month Header */}
                             <button
                                 onClick={() => toggleMonth(monthKey)}
-                                className={`w-full flex justify-between items-center p-6 rounded-2xl border-2 transition-all ${expandedMonths[monthKey]
-                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl translate-y-[-2px]'
-                                    : 'bg-white border-gray-100 text-gray-800 hover:border-indigo-200 shadow-sm'
+                                className={`w-full group relative overflow-hidden transition-all duration-500 rounded-[3rem] border ${expandedMonths[monthKey]
+                                    ? 'bg-indigo-600 border-indigo-500 shadow-2xl shadow-indigo-600/20'
+                                    : 'bg-white/[0.02] border-white/5 hover:bg-white/[0.04] hover:border-white/10'
                                     }`}
                             >
-                                <div className="flex items-center gap-4">
-                                    <span className="text-2xl">📁</span>
-                                    <h2 className="text-xl font-black">{monthKey}</h2>
-                                </div>
-                                <div className="flex items-center gap-6">
-                                    <div className="text-right">
-                                        <p className={`text-[10px] uppercase font-black ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-400'}`}>{t.safe.monthlyTotal}</p>
-                                        <p className="text-lg font-black">${monthData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                <div className="flex justify-between items-center p-10 relative z-10">
+                                    <div className="flex items-center gap-10">
+                                        <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-2xl transition-all ${expandedMonths[monthKey] ? 'bg-white/20' : 'bg-white/5'}`}>
+                                            📅
+                                        </div>
+                                        <div className="text-left">
+                                            <h2 className={`text-2xl font-black tracking-tighter uppercase ${expandedMonths[monthKey] ? 'text-white' : 'text-white/80'}`}>{monthKey}</h2>
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.3em] mt-1 ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-500'}`}>
+                                                {Object.keys(monthData.days).length} {t.safe.entries} recorded
+                                            </p>
+                                        </div>
                                     </div>
-                                    <span className={`text-xl transition-transform ${expandedMonths[monthKey] ? 'rotate-180' : ''}`}>▼</span>
+
+                                    <div className="flex items-center gap-12">
+                                        <div className="text-right">
+                                            <p className={`text-[9px] font-black uppercase tracking-[0.3em] mb-1 ${expandedMonths[monthKey] ? 'text-indigo-200' : 'text-gray-500'}`}>{t.safe.monthlyTotal}</p>
+                                            <p className={`text-3xl font-black tracking-tighter ${expandedMonths[monthKey] ? 'text-white' : 'text-indigo-400'}`}>
+                                                ${monthData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${expandedMonths[monthKey] ? 'border-white/30 rotate-180' : 'border-white/10 text-gray-500'}`}>
+                                            ↓
+                                        </div>
+                                    </div>
                                 </div>
+                                {expandedMonths[monthKey] && <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"></div>}
                             </button>
 
-                            {/* --- Days List --- */}
+                            {/* Days List */}
                             {expandedMonths[monthKey] && (
-                                <div className="ml-4 pl-4 border-l-2 border-indigo-100 space-y-4 animate-slideDown">
-                                    {Object.entries(monthData.days).map(([dayKey, dayData]) => (
-                                        <div key={dayKey} className="space-y-3">
-                                            {/* --- Day Header --- */}
+                                <div className="grid grid-cols-1 gap-6 pl-10 border-l border-white/10 animate-reveal">
+                                    {Object.entries(monthData.days).map(([dayKey, dayData], dIdx) => (
+                                        <div key={dayKey} className="space-y-4 animate-reveal" style={{ animationDelay: `${dIdx * 0.05}s` }}>
+                                            {/* Day Row */}
                                             <button
                                                 onClick={() => toggleDay(dayKey)}
-                                                className={`w-full flex justify-between items-center p-4 rounded-xl border-2 transition-all ${expandedDays[dayKey]
-                                                    ? 'bg-gray-800 border-gray-800 text-white shadow-md'
-                                                    : 'bg-white border-gray-100 text-gray-700 hover:border-gray-300'
+                                                className={`w-full flex justify-between items-center px-8 py-6 rounded-[2rem] border transition-all ${expandedDays[dayKey]
+                                                    ? 'bg-white/5 border-white/10'
+                                                    : 'bg-transparent border-transparent hover:bg-white/[0.02]'
                                                     }`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`w-2 h-2 rounded-full ${expandedDays[dayKey] ? 'bg-indigo-400' : 'bg-gray-200'}`}></span>
-                                                    <h3 className="font-bold">{new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}</h3>
-                                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${expandedDays[dayKey] ? 'bg-gray-700 text-gray-400' : 'bg-gray-100 text-gray-400'
-                                                        }`}>
-                                                        {dayData.payments.length} {t.safe.entries}
-                                                    </span>
+                                                <div className="flex items-center gap-6">
+                                                    <div className={`w-2 h-2 rounded-full ${expandedDays[dayKey] ? 'bg-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.5)]' : 'bg-gray-700'}`}></div>
+                                                    <h3 className={`text-sm font-black uppercase tracking-widest ${expandedDays[dayKey] ? 'text-white' : 'text-gray-500'}`}>
+                                                        {new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                                                    </h3>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <p className="font-black text-sm">${dayData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                                                    <span className={`text-xs transition-transform ${expandedDays[dayKey] ? 'rotate-180' : ''}`}>▼</span>
+                                                <div className="flex items-center gap-8">
+                                                    <span className="text-xs font-black text-indigo-400/80 tracking-tighter">${dayData.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                    <span className={`text-[10px] font-bold text-gray-600 transition-transform ${expandedDays[dayKey] ? 'rotate-180' : ''}`}>▼</span>
                                                 </div>
                                             </button>
 
-                                            {/* --- Payments Table --- */}
+                                            {/* Tables for each Day */}
                                             {expandedDays[dayKey] && (
-                                                <div className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm animate-fadeIn">
+                                                <div className="glass-card overflow-hidden animate-reveal stagger-1">
                                                     <table className="w-full text-left">
-                                                        <thead className="bg-gray-50 text-[10px] text-gray-400 uppercase font-black border-b">
+                                                        <thead className="bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">
                                                             <tr>
-                                                                <th className="px-6 py-4">{t.safe.serialTime}</th>
-                                                                <th className="px-6 py-4">{t.safe.entity}</th>
-                                                                <th className="px-6 py-4">{t.safe.stream}</th>
-                                                                <th className="px-6 py-4">{t.safe.value}</th>
-                                                                <th className="px-6 py-4 text-right pr-8">{t.common.actions}</th>
+                                                                <th className="px-8 py-4">{t.safe.serialTime}</th>
+                                                                <th className="px-8 py-4">{t.safe.entity}</th>
+                                                                <th className="px-8 py-4">{t.safe.stream}</th>
+                                                                <th className="px-8 py-4">{t.safe.value}</th>
+                                                                <th className="px-8 py-4 text-right">ACTIONS</th>
                                                             </tr>
                                                         </thead>
-                                                        <tbody className="divide-y text-xs">
-                                                            {dayData.payments.map(pay => (
-                                                                <tr key={pay.id} className="hover:bg-gray-50 transition-colors">
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="font-black text-indigo-600">{pay.invoice_id ? `#${pay.invoice_id}` : t.safe.manualSafe}</div>
-                                                                        <div className="text-[10px] text-gray-400">{new Date(pay.created_at).toLocaleTimeString()}</div>
-                                                                        {pay.notes && <div className="text-[10px] text-indigo-400 mt-1 italic">📝 {pay.notes}</div>}
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {dayData.payments.map((pay, pIdx) => (
+                                                                <tr key={pay.id} className="group hover:bg-white/[0.02] transition-colors animate-reveal" style={{ animationDelay: `${pIdx * 0.05}s` }}>
+                                                                    <td className="px-8 py-6">
+                                                                        <div className="font-black text-indigo-400 tracking-tighter">{pay.invoice_id ? `ORD-#${pay.invoice_id}` : t.safe.manualSafe}</div>
+                                                                        <div className="text-[10px] font-bold text-gray-600 uppercase mt-1 tracking-widest">{new Date(pay.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                        {pay.notes && <div className="text-[10px] font-bold text-emerald-500/60 mt-2 bg-emerald-500/5 px-2 py-1 rounded w-fit">💬 {pay.notes}</div>}
                                                                     </td>
-                                                                    <td className="px-6 py-4 font-bold text-gray-700">
-                                                                        {pay.invoice?.customer?.name || (pay.invoice_id ? t.safe.guestStream : t.admin)}
+                                                                    <td className="px-8 py-6">
+                                                                        <span className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors uppercase">
+                                                                            {pay.invoice?.customer?.name || (pay.invoice_id ? t.safe.guestStream : t.admin)}
+                                                                        </span>
                                                                     </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <span className={`px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-tight ${pay.type === 'initial'
-                                                                            ? 'bg-blue-50 text-blue-600'
+                                                                    <td className="px-8 py-6">
+                                                                        <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${pay.type === 'initial'
+                                                                            ? 'text-blue-400 bg-blue-500/5 border-blue-500/10'
                                                                             : pay.type === 'debt_payment'
-                                                                                ? 'bg-orange-50 text-orange-600'
-                                                                                : 'bg-green-50 text-green-600'
+                                                                                ? 'text-orange-400 bg-orange-500/5 border-orange-500/10'
+                                                                                : 'text-emerald-400 bg-emerald-500/5 border-emerald-500/10'
                                                                             }`}>
                                                                             {pay.type === 'initial' ? t.safe.initial : pay.type === 'debt_payment' ? t.safe.remaining : t.safe.manual}
                                                                         </span>
                                                                     </td>
-                                                                    <td className="px-6 py-4">
-                                                                        <div className="font-black text-green-600 text-base">+${parseFloat(pay.amount).toLocaleString()}</div>
-                                                                        <div className="text-[9px] text-gray-400 uppercase font-black">{pay.payment_method}</div>
+                                                                    <td className="px-8 py-6">
+                                                                        <div className="font-black text-white text-lg tracking-tighter">+${parseFloat(pay.amount).toLocaleString()}</div>
+                                                                        <div className="text-[9px] text-gray-600 uppercase font-black tracking-[0.2em]">{pay.payment_method}</div>
                                                                     </td>
-                                                                    <td className="px-6 py-4 text-right pr-8">
-                                                                        <div className="flex justify-end gap-2">
-                                                                            {pay.invoice_id && (
-                                                                                <button
-                                                                                    onClick={() => handleViewInvoice(pay.invoice_id)}
-                                                                                    className="p-2 text-gray-400 hover:text-indigo-600 transition-all hover:bg-indigo-50 rounded-lg"
-                                                                                    title={t.invoices.viewRecord}
-                                                                                >
-                                                                                    <EyeIcon />
-                                                                                </button>
-                                                                            )}
-                                                                            <button
-                                                                                onClick={() => handleDeleteEntry(pay.id)}
-                                                                                className="p-2 text-gray-200 hover:text-red-500 transition-all hover:bg-red-50 rounded-lg"
-                                                                                title={t.safe.reverseTransaction}
-                                                                            >
-                                                                                <TrashIcon />
-                                                                            </button>
-                                                                        </div>
+                                                                    <td className="px-8 py-6 text-right space-x-4">
+                                                                        {pay.invoice_id && (
+                                                                            <button onClick={() => handleViewInvoice(pay.invoice_id)} className="text-[9px] font-black text-indigo-400/60 hover:text-white uppercase tracking-widest transition-all">{t.invoices.viewRecord}</button>
+                                                                        )}
+                                                                        <button onClick={() => handleDeleteEntry(pay.id)} className="text-[9px] font-black text-red-500/40 hover:text-red-500 uppercase tracking-widest transition-all">{t.safe.reverseTransaction}</button>
                                                                     </td>
                                                                 </tr>
                                                             ))}
@@ -279,151 +286,151 @@ export default function Safe() {
                 </div>
             )}
 
-            {/* --- Manual Entry Modal --- */}
+            {/* Manual Entry Modal */}
             {showManualModal && (
-                <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] animate-fadeIn">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-slideUp">
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                            <h2 className="text-xl font-black text-gray-800">{t.safe.addManualEntry}</h2>
-                            <button onClick={() => setShowManualModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors">✕</button>
-                        </div>
-                        <form onSubmit={handleAddManualEntry} className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{t.safe.amount}</label>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-black text-gray-400">$</span>
-                                    <input
-                                        required
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="0.00"
-                                        className="w-full pl-8 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 font-bold transition-all"
-                                        value={manualForm.amount}
-                                        onChange={e => setManualForm({ ...manualForm, amount: e.target.value })}
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-3xl flex items-center justify-center p-6 z-[100] animate-reveal">
+                    <div className="bg-[#0f1218] border border-white/10 p-12 rounded-[3.5rem] shadow-2xl w-full max-w-md relative overflow-hidden flex flex-col max-h-[85vh]">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -mr-32 -mt-32"></div>
+                        <h2 className="text-3xl font-black text-white mb-10 tracking-tighter uppercase flex-shrink-0">{t.safe.addManualEntry}</h2>
+
+                        <form onSubmit={handleAddManualEntry} className="flex flex-col flex-1 overflow-hidden">
+                            <div className="flex-1 space-y-8 overflow-y-auto custom-scrollbar pr-4 -mr-4 pb-4">
+                                <div className="space-y-3">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-4">{t.safe.amount}</label>
+                                    <div className="relative">
+                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-700">$</span>
+                                        <input
+                                            required
+                                            type="number"
+                                            step="0.01"
+                                            className="w-full bg-white/5 border border-white/10 p-6 pl-14 rounded-2xl text-2xl font-black text-white focus:border-indigo-500/50 outline-none transition-all placeholder:text-gray-800"
+                                            placeholder="0.00"
+                                            value={manualForm.amount}
+                                            onChange={e => setManualForm({ ...manualForm, amount: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest pl-4">{t.safe.notes}</label>
+                                    <textarea
+                                        className="w-full bg-white/5 border border-white/10 p-6 rounded-2xl text-sm font-bold text-white focus:border-indigo-500/50 outline-none transition-all h-32 placeholder:text-gray-800"
+                                        placeholder={t.safe.notes}
+                                        value={manualForm.notes}
+                                        onChange={e => setManualForm({ ...manualForm, notes: e.target.value })}
                                     />
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">{t.safe.notes}</label>
-                                <textarea
-                                    rows="3"
-                                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-600 font-medium transition-all"
-                                    placeholder={t.safe.notes}
-                                    value={manualForm.notes}
-                                    onChange={e => setManualForm({ ...manualForm, notes: e.target.value })}
-                                />
+                            <div className="flex gap-4 pt-6 mt-6 border-t border-white/5 flex-shrink-0">
+                                <button type="button" onClick={() => setShowManualModal(false)} className="flex-1 px-8 py-5 text-[10px] font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest focus:outline-none">{t.common.cancel}</button>
+                                <button
+                                    disabled={isSaving}
+                                    className="flex-[2] bg-indigo-600 text-white py-5 rounded-3xl font-black text-xs hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30 active:scale-95 uppercase tracking-[0.2em]"
+                                >
+                                    {isSaving ? t.common.loading : t.common.save}
+                                </button>
                             </div>
-
-                            <button
-                                disabled={isSaving}
-                                className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all disabled:opacity-50 mt-4 active:scale-95"
-                            >
-                                {isSaving ? t.common.loading : t.common.save}
-                            </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* --- Invoice Details Modal (Merged from Invoices) --- */}
+            {/* Invoice Details Modal */}
             {selectedInvoice && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[70] animate-fadeIn">
-                    <div className="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto relative animate-scaleUp">
-                        <button
-                            onClick={() => setSelectedInvoice(null)}
-                            className="absolute top-6 right-6 text-gray-300 hover:text-gray-600 text-2xl transition-colors"
-                        >
-                            ✕
-                        </button>
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-3xl flex items-center justify-center p-6 z-[110] animate-reveal">
+                    <div className="bg-[#0f1218] border border-white/10 p-12 rounded-[4rem] shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar relative animate-reveal">
+                        <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-600/5 blur-[120px] -mr-40 -mt-40"></div>
 
-                        <div className="flex justify-between items-start mb-8 border-b border-gray-100 pb-6">
-                            <div>
-                                <h2 className="text-3xl font-black text-indigo-600 tracking-tighter">{t.nav.history}</h2>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-1">{t.common.orderNo} #{selectedInvoice.id}</p>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-12">
+                                <div>
+                                    <h2 className="text-4xl font-black text-white tracking-tighter uppercase leading-none">{t.nav.history}</h2>
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mt-4 opacity-70">{t.common.orderNo} #{selectedInvoice.id}</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedInvoice(null)}
+                                    className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-gray-500 hover:text-white transition-all text-2xl"
+                                >
+                                    &times;
+                                </button>
                             </div>
-                            <div className="text-right">
-                                <p className="text-lg font-black text-gray-800">{new Date(selectedInvoice.created_at).toLocaleDateString()}</p>
-                                <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{new Date(selectedInvoice.created_at).toLocaleTimeString()}</p>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-6 mb-8">
-                            <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-                                <h4 className="text-[9px] font-black text-gray-400 uppercase mb-2 tracking-widest">{t.dashboard.customer}</h4>
-                                <p className="font-black text-gray-800">{selectedInvoice.customer?.name || t.dashboard.guest}</p>
-                                <p className="text-[10px] text-gray-500 font-bold">{selectedInvoice.customer?.phone}</p>
+                            <div className="grid grid-cols-2 gap-8 mb-12">
+                                <div className="glass-card p-6 border-none bg-white/[0.03]">
+                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">{t.dashboard.customer}</p>
+                                    <p className="text-lg font-black text-white uppercase tracking-tighter">{selectedInvoice.customer?.name || t.dashboard.guest}</p>
+                                    <p className="text-xs font-bold text-gray-500 mt-1 font-mono tracking-widest">{selectedInvoice.customer?.phone}</p>
+                                </div>
+                                <div className="glass-card p-6 border-none bg-white/[0.03]">
+                                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-2">{t.dashboard.method}</p>
+                                    <p className="text-lg font-black text-indigo-400 uppercase tracking-tighter">{selectedInvoice.payment_method}</p>
+                                    <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest mt-1">By {selectedInvoice.user?.name}</p>
+                                </div>
                             </div>
-                            <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100">
-                                <h4 className="text-[9px] font-black text-gray-400 uppercase mb-2 tracking-widest">{t.dashboard.method}</h4>
-                                <p className="font-black text-indigo-600 uppercase text-sm">{selectedInvoice.payment_method}</p>
-                                <p className="text-[9px] text-gray-400 font-black tracking-tighter leading-relaxed">
-                                    {t.invoices.recordedBy} {selectedInvoice.user?.name}
-                                </p>
-                            </div>
-                        </div>
 
-                        <div className="mb-8">
-                            <h4 className="text-[9px] font-black text-gray-400 uppercase mb-3 tracking-widest text-center">{t.invoices.purchasedInventory}</h4>
-                            <div className="overflow-hidden border border-gray-100 rounded-2xl">
-                                <table className="w-full text-left">
-                                    <thead className="bg-gray-50 text-[9px] font-black text-gray-400 uppercase border-b border-gray-100">
-                                        <tr>
-                                            <th className="px-4 py-3">{t.invoices.article}</th>
-                                            <th className="px-4 py-3 text-center">{t.common.qty}</th>
-                                            <th className="px-4 py-3 text-right">{t.common.subtotal}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100 text-xs">
-                                        {selectedInvoice.items.map(item => (
-                                            <tr key={item.id}>
-                                                <td className="px-4 py-4">
-                                                    <div className="font-black text-gray-800">{item.product?.brand} {item.product?.model_code}</div>
-                                                    <div className="text-[9px] text-gray-400 uppercase font-black">{t.products.types[item.product?.type] || item.product?.type}</div>
-                                                </td>
-                                                <td className="px-4 py-4 text-center text-gray-500 font-black">{item.quantity}</td>
-                                                <td className="px-4 py-4 text-right font-black text-gray-800">${item.subtotal}</td>
+                            <div className="space-y-6 mb-12">
+                                <h4 className="text-[9px] font-black text-gray-600 uppercase tracking-[0.4em] text-center mb-8">{t.invoices.purchasedInventory}</h4>
+                                <div className="glass-card overflow-hidden">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-white/5 text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
+                                            <tr>
+                                                <th className="px-6 py-4">{t.invoices.article}</th>
+                                                <th className="px-6 py-4 text-center">{t.common.qty}</th>
+                                                <th className="px-6 py-4 text-right">PRICE</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end pt-6 border-t-2 border-dashed border-gray-100">
-                            <div className="w-48 space-y-2">
-                                <div className="flex justify-between text-[10px] text-gray-400 font-black uppercase">
-                                    <span>{t.common.subtotal}:</span>
-                                    <span>${selectedInvoice.subtotal}</span>
-                                </div>
-                                <div className="flex justify-between text-[10px] text-red-400 font-black uppercase">
-                                    <span>{t.invoices.discount}:</span>
-                                    <span>-${selectedInvoice.discount}</span>
-                                </div>
-                                <div className="flex justify-between text-[10px] font-black text-green-600 pt-1 uppercase">
-                                    <span>{t.sales.amountPaid}:</span>
-                                    <span>${selectedInvoice.amount_paid}</span>
-                                </div>
-                                <div className="flex justify-between text-xl font-black text-indigo-600 pt-2 border-t border-gray-100">
-                                    <span>{t.common.total}:</span>
-                                    <span>${selectedInvoice.total}</span>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {selectedInvoice.items.map(item => (
+                                                <tr key={item.id} className="group">
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-sm font-black text-white group-hover:text-indigo-300 transition-colors uppercase">{item.product?.brand} {item.product?.model_code}</div>
+                                                        <div className="text-[9px] font-black text-gray-600 uppercase mt-1 tracking-widest">{item.product?.type}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center text-sm font-black text-gray-400">{item.quantity}</td>
+                                                    <td className="px-6 py-4 text-right text-sm font-black text-white">${item.subtotal}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mt-8 flex gap-3">
-                            <button
-                                onClick={() => window.print()}
-                                className="flex-1 bg-indigo-600 text-white py-3.5 rounded-2xl font-black hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all active:scale-95"
-                            >
-                                🖨️ {t.invoices.generatePdf}
-                            </button>
-                            <button
-                                onClick={() => setSelectedInvoice(null)}
-                                className="px-8 bg-gray-100 text-gray-500 rounded-2xl font-black hover:bg-gray-200 transition-colors"
-                            >
-                                {t.common.close}
-                            </button>
+                            <div className="flex justify-end mb-12">
+                                <div className="w-64 space-y-4 pt-6 border-t border-white/10">
+                                    <div className="flex justify-between text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                                        <span>SUBTOTAL</span>
+                                        <span className="text-white font-mono">${selectedInvoice.subtotal}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black text-red-500/60 uppercase tracking-widest">
+                                        <span>{t.invoices.discount}</span>
+                                        <span className="font-mono">-${selectedInvoice.discount}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                                        <span>PAID</span>
+                                        <span className="font-mono">${selectedInvoice.amount_paid}</span>
+                                    </div>
+                                    <div className="flex justify-between text-4xl font-black text-indigo-400 tracking-tighter pt-4 border-t border-white/5">
+                                        <span className="text-xs uppercase tracking-[0.3em] self-center">{t.common.total}</span>
+                                        <span>${selectedInvoice.total}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-6 pt-6 sticky bottom-0 bg-[#0f1218]/90 backdrop-blur-md pb-6">
+                                <button
+                                    onClick={() => window.print()}
+                                    className="flex-1 bg-white/5 hover:bg-white/10 text-white py-5 rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all border border-white/10"
+                                >
+                                    🖨️ {t.invoices.generatePdf}
+                                </button>
+                                <button
+                                    onClick={() => setSelectedInvoice(null)}
+                                    className="px-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-3xl font-black text-xs uppercase tracking-[0.2em] transition-all"
+                                >
+                                    {t.common.close}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -436,29 +443,12 @@ function FilterBtn({ label, active, onClick }) {
     return (
         <button
             onClick={onClick}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${active
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-800'
+            className={`px-8 py-3 rounded-2xl text-[10px] font-black transition-all uppercase tracking-widest border ${active
+                ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-600/20'
+                : 'text-gray-600 border-transparent hover:text-white hover:bg-white/5'
                 }`}
         >
             {label}
         </button>
-    );
-}
-
-function TrashIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-    );
-}
-
-function EyeIcon() {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-        </svg>
     );
 }

@@ -9,6 +9,7 @@ import Customers from './pages/Customers';
 import Settings from './pages/Settings';
 import Invoices from './pages/Invoices';
 import Safe from './pages/Safe';
+import Categories from './pages/Categories';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -31,6 +32,7 @@ function App() {
         <Route path="customers" element={<Customers />} />
         <Route path="sales" element={<Sales />} />
         <Route path="invoices" element={<Invoices />} />
+        <Route path="categories" element={<Categories />} />
         <Route path="safe" element={<Safe />} />
         <Route path="settings" element={<Settings />} />
       </Route>
